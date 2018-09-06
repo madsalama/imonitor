@@ -5,7 +5,7 @@
 $ monitor [start|stop|restart]            # this will remove all running watches, sure?
 $ monitor add-watch [PATH]                # print(now watching ${}).except(${} not found/${} already exists); 
 $ monitor remove-watch [PATH]             # except(watch does not exist);
-$ monitor status                          # Currently watching...
+$ monitor list                            # Currently watching...
 ```
 - Format for ```changes.log```, inpsired by subversion's command output for `svn status`:
 ```
