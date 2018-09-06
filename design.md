@@ -1,11 +1,12 @@
-- motivation: one daemon to dynamically add/remove watches on multiple directories/paths
-- action: invoke
+- Motivation: one daemon to dynamically add/remove watches on multiple directories/paths, multiple users can do this through same daemon through a CLI utility ```$ monitor-cli``` that interfaces with the daemon via a unix domain socket.
 
+- Actionable: invoke a shell script to log changes instead of manually making lists about file changes.
 
 :DESIGN:
+
 - format for changes.properties, inpsired by subversion's command output for `svn status`
 ```
-++ application.properties;eai.soap.getHistory.url=$value
+++  application.properties;eai.soap.getHistory.url=$value
 --  application.properties;eai.soap.getData.url=$value
 
 A /opt/web/app/tomcat/ecycc8/conf/cycc/web_templates/serviceportal/check-new-stuff.ftl
