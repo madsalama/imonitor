@@ -6,7 +6,24 @@ $ monitor-ctl add-watch [PATH]                # print(now watching ${}).except($
 $ monitor-ctl remove-watch [PATH]             # except(watch does not exist);
 $ monitor-cli status                          # Currently watching...
 ```
-- Invoke a shellscript ```diff_script.sh >> changes.log``` to log actual file changes. No need to reinvent ```diff``` in C. 
+```
+// MONITORING application.properties:
+OPENED..?
+  GET(FD);
+  ORIGINAL = READ();
+  while(POLL_EACH_1s){
+  WRITTEN?
+    MODIFIED = READ_FROM_DISK();
+  CLOSED?
+    CLOSE(FD);
+    INVOKE DIFF();
+    break; 
+  }
+```
+
+
+
+
 - Format for ```changes.log```, inpsired by subversion's command output for `svn status`:
 ```
 ++  application.properties;eai.soap.getHistory.url=$value
