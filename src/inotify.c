@@ -6,10 +6,10 @@
 #include <unistd.h>
 
        /* 
-		  Read all available inotify events from the file descriptor 'fd'.
+	  Read all available inotify events from the file descriptor 'fd'.
           wd is the table of watch descriptors for the directories in argv.
           argc is the length of wd and argv.
-          argv is the list of watched directories.
+          argv is the list of watched directories. // add/remove dynamically instead
           Entry 0 of wd and argv is unused. */
 		  
        static void
@@ -34,9 +34,9 @@
             //   char     name[];   /* Optional null-terminated name */
            //};
 		   
-		   const struct inotify_event *event;
+	   const struct inotify_event *event;
            
-		   int i;
+	   int i;
            ssize_t len;
            char *ptr;
 
