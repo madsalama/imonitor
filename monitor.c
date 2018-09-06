@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 // monitor.c | unix socket client for managing imonitor daemon (daemon.c)
-// USAGE: monitor [ restart-daemon | add-watch | remove-watch | list ] # --help
+// USAGE: monitor [ restart-daemon | add-watch | remove-watch | list | help ]
 
 int main(int argc, char *argv[])
 {
