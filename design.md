@@ -1,4 +1,4 @@
-* format for changes.properties *
+- format for changes.propertie
 ```
 ++ application.properties;eai.soap.getHistory.url=$value
 --  application.properties;eai.soap.getData.url=$value
