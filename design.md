@@ -1,4 +1,9 @@
-- format for changes.propertie
+- motivation: one daemon to dynamically add/remove watches on multiple directories/paths
+- action: invoke
+
+
+:DESIGN:
+- format for changes.properties, inpsired by subversion's command output for `svn status`
 ```
 ++ application.properties;eai.soap.getHistory.url=$value
 --  application.properties;eai.soap.getData.url=$value
