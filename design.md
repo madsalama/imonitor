@@ -1,5 +1,6 @@
 ## Design
-- Daemon to support dynamically adding/removing inotify watches on multiple directories/paths, multiple users can do this through the same daemon using a CLI utility ```$ monitor-cli``` that interfaces with the daemon via a unix domain socket.
+- Daemon to support dynamically adding/removing inotify watches on multiple directories/paths. 
+- CLI utility ```$ monitor-cli``` that interfaces with the daemon via a unix domain socket.
 ```		  
 $ monitor-cli [start|stop|restart]            # this will remove all running watches, sure?
 $ monitor-ctl add-watch [PATH]                # print(now watching ${}).except(${} not found/${} already exists); 
