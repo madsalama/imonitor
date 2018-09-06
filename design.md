@@ -1,4 +1,4 @@
-DESIGN:
+# DESIGN:
 - Motivation: one daemon to support dynamically adding/removing inotify watches on multiple directories/paths, multiple users can do this through same daemon through a CLI utility ```$ monitor-cli``` that interfaces with the daemon via a unix domain socket.
 
 - Actionable: invoke a shell script to log changes instead of manually making lists about file changes.
