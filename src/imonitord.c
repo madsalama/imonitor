@@ -9,9 +9,9 @@
 #include <sys/signal.h>
 #include <wait.h>
 
-#define PID_PATH "/path/to/un_server.pid"
-#define SOCK_PATH "/path/to/my_echo_socket"
-#define LOG_PATH "/path/to/un_server.log"
+#define PID_PATH "/var/tmp/imonitor.pid"
+#define SOCK_PATH "/var/run/imonitor.socket"
+#define LOG_PATH "/var/log/imonitord.log"
 
 void fork_handler(int);
 void handle_connection(int);
