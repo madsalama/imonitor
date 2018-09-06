@@ -2,8 +2,8 @@
 - One daemon to support dynamically adding/removing inotify watches on multiple directories/paths, multiple users can do this through the same daemon using a CLI utility ```$ monitor-cli``` that interfaces with the daemon via a unix domain socket:
 ```		  
 $ monitor-cli start|stop|restart          # stop/start will remove all running watches, sure?
-$ monitor-ctl add-watch [PATH]         # print(now watching ${}).except(${} not found/${} already exists); 
-$ monitor-ctl remove-watch [PATH]   # except(watch does not exist); 	
+$ monitor-ctl add-watch [PATH]            # print(now watching ${}).except(${} not found/${} already exists); 
+$ monitor-ctl remove-watch [PATH]         # except(watch does not exist); 	
 ```
 - Invoke a shellscript ```diff_script.sh >> changes.log``` to log actual file changes. No need to reinvent ```diff``` in C. 
 - Format for ```changes.log```, inpsired by subversion's command output for `svn status`:
