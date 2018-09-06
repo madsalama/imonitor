@@ -16,6 +16,10 @@ A /opt/web/app/tomcat/ecycc8/conf/cycc/web_templates/serviceportal/check-new-stu
 M /opt/web/app/tomcat/ecycc8/conf/cycc/web_templates/serviceportal/check-number.ftl
 D /opt/web/app/tomcat/ecycc8/conf/cycc/web_templates/serviceportal/deleteme.ftl	
 ```
+## Implementing Components 
+1.  client/server via unix socket
+2.  daemon receive arguments via monitor command as designed above
+3.  add/remove inotify watches
 
 ## Pseudo Implementation
 ```
