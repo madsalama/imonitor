@@ -5,8 +5,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-// monitor.c | unix socket client for managing imonitor daemon = (daemon.c)
-// USAGE: monitor [clear|add|remove|list|help]
+// imonitor.c | unix socket client for managing imonitor daemon = (daemon.c)
+// USAGE: monitor [add|remove|list|help]
 
 void check_arg(int argc, char* arg);
 void synopsis();
@@ -51,7 +51,8 @@ int main(int argc, char *argv[])
 	// REQUEST FORMAT = "ACTION:PATH"
 	// char *request_str = strcat(argv[1], argv[2]);
 	
-	request_str = argv[1];
+	char *_request_str = strcat(argv[1], "_" );
+	request_str = strcat(_request_str, argv[2]);
 
         if(send(sockfd, request_str, strlen(request_str), 0) == -1)
         {
@@ -77,7 +78,7 @@ int main(int argc, char *argv[])
 
 void check_arg(int argc, char* arg){
 
-	if ( strcmp(arg,"clear") && strcmp(arg,"add") && strcmp(arg,"remove") && strcmp(arg,"help") && strcmp(arg,"list") ) 
+	if ( strcmp(arg,"add") && strcmp(arg,"remove") && strcmp(arg,"help") && strcmp(arg,"list") ) 
 	{
 		printf("imonitor: %s is not a valid argument\n", arg);
 		synopsis();
@@ -93,19 +94,19 @@ void check_arg(int argc, char* arg){
 			exit(1);
 		}
 	}
+
 }
 
 void synopsis(){
-	printf("$imonitor [clear|add|remove|list|help]  \n");
+	printf("$imonitor [add|remove|list|help]\n");
 }
 
 void help(){
 	printf("\nimonitor: simple client for imonitord for managing inotify watches\n\n\
 commands:\n\
-$ imonitor list       # request a list of paths for running watches\n\
 $ imonitor add [PATH] # request a new watch on specified path\n\
 $ imonitor remove [PATH] # request to remove watch on specified path (if found)\n\
-$ imonitor status        # prints imonitord daemon status\n\
+$ imonitor list       # request a list of paths for running watches\n\
 $ imonitor help          # prints this help\n\
 ");
 
