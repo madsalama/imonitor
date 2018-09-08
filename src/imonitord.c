@@ -87,11 +87,24 @@ void handle_connection(int client_sockfd)
         char buff[1024];
         unsigned int len;
 
-        printf("Handling connection\n");
+	printf("Handling connection\n");
         fflush(stdout);
 
-        while(len = recv(client_sockfd, &buff, 1024, 0), len > 0) //Grab it and give it right back
-                send(client_sockfd, &buff, len, 0);
+        while(len = recv(client_sockfd, &buff, 1024, 0), len > 0)
+	{
+		// check received request
+		// if list -> list wd
+		// if add [path] -> add wd
+		// if remove [path/wd] -> remove wd
+		
+		buff[len]='\0';
+		if (!strcmp(&buff,"list")){
+			// handle "list" 
+			send(client_sockfd, "list handled!", 100, 0);	
+		}
+		// else if ...
+		// else if ...
+	}
 
         close(client_sockfd);
         printf("Done handling\n");

@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
 
         int sockfd, t, len;
         struct sockaddr_un remote;
-	char *str[100];
 	char request_str[PATH_MAX+5];
+	char response_str[500];
 
         if((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
         {
@@ -60,10 +60,9 @@ int main(int argc, char *argv[])
             exit(1);
         }
 
-        if((t = recv(sockfd, request_str, 100, 0)) > 0)
+        if((t = recv(sockfd, &response_str, 500, 0)) > 0)
         {
-            str[t] = '\0';
-            printf("echo> %s", request_str);
+            printf("imonitord: %s \n", response_str);
         }
          else
          {
