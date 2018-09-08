@@ -18,8 +18,8 @@ D /opt/web/app/tomcat/ecycc8/conf/cycc/web_templates/serviceportal/deleteme.ftl
 ```
 ## Component Implementation
 - UNIX_SOCKET CLIENT/SERVER:
-1. client <= send message to server
-2. server <= inotify/track watches + handle message from client => fork watch handler
+1. client <= send message to server (done, request format is action:path/wd | example: add:/opt ; remove:34 ; list:[null])
+2. server <= inotify/track watches + handle message from client => fork watch handler.
 
 - Generate/update change reports for each watch.
 
