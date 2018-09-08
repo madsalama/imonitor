@@ -21,6 +21,7 @@ D /opt/web/app/tomcat/ecycc8/conf/cycc/web_templates/serviceportal/deleteme.ftl
 1. client <= send message to server
 2. server <= inotify/track watches + handle message from client => fork watch handler
 
+- Generate/update change reports for each watch.
 
 ## Pseudo Implementation
 ```
