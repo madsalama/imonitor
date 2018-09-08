@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
 // imonitor.c | unix socket client for managing imonitor daemon = (daemon.c)
 // USAGE: monitor [add|remove|list|help]
@@ -16,8 +17,7 @@ int main(int argc, char *argv[])
 {
 
 	if (argc == 1){
-      	   printf("imonitor: no arguments\n");
-	   synopsis();
+      	   printf("imonitor: no arguments. [hint: imonitor help]\n");
 	   exit(1);
 	}
 
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
         int sockfd, t, len;
         struct sockaddr_un remote;
 	char *str[100];
-	char *request_str;
+	char request_str[PATH_MAX+5];
 
         if((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
         {
@@ -46,12 +46,13 @@ int main(int argc, char *argv[])
                 exit(1);
         }
 
-        printf("Connected\n");
+        // printf("connected to daemon\n");
 
 	// REQUEST FORMAT = "ACTION:PATH"
-	// char *request_str = strcat(argv[1], argv[2]);
-	
-	request_str = snprintf(sizeof(request_str), "%s:%s", argv[1],argv[2]);
+	if (strcmp(argv[1],"list"))
+		snprintf(request_str, sizeof(request_str), "%s:%s", argv[1],argv[2]);
+	else
+		strcpy(request_str, argv[1]);
 
         if(send(sockfd, request_str, strlen(request_str), 0) == -1)
         {
@@ -101,12 +102,11 @@ void synopsis(){
 }
 
 void help(){
-	printf("\nimonitor: simple client for imonitord for managing inotify watches\n\n\
+	printf("\nimonitor: client for imonitord to manage multiple inotify watches\n\n\
 commands:\n\
-$ imonitor add [PATH] # request a new watch on specified path\n\
-$ imonitor remove [PATH] # request to remove watch on specified path (if found)\n\
-$ imonitor list       # request a list of paths for running watches\n\
-$ imonitor help          # prints this help\n\
+$ imonitor add [PATH]       # request a new watch on specified path\n\
+$ imonitor remove [WD|PATH] # request to remove watch on specified path (if found)\n\
+$ imonitor list             # request a list of paths for running watches\n\
+$ imonitor help             # prints this help\n\
 ");
-
 }
