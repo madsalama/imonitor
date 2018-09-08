@@ -2,10 +2,10 @@
 - ``` daemon.c ``` Daemon to support dynamically adding/removing inotify watches on multiple directories/paths. 
 - ``` monitor.c``` CLI utility that interfaces with the daemon via a unix domain socket.
 ```		  
-$ monitor [status|start|reload]           # reload: this will remove all running watches, sure?
-$ monitor add-watch [PATH]                # print(now watching ${}).except(${} not found/${} already exists); 
-$ monitor remove-watch [PATH]             # except(watch does not exist);
+$ monitor add [PATH]                      # print(now watching ${}).except(${} not found/${} already exists); 
+$ monitor remove [PATH]                   # except(watch does not exist);
 $ monitor list                            # Currently watching...
+$ monitor help                            # Prints help/synopsis
 ```
 - Format for ```changes.log```, inpsired by subversion's command output for `svn status`:
 ```
