@@ -51,8 +51,7 @@ int main(int argc, char *argv[])
 	// REQUEST FORMAT = "ACTION:PATH"
 	// char *request_str = strcat(argv[1], argv[2]);
 	
-	char *_request_str = strcat(argv[1], "_" );
-	request_str = strcat(_request_str, argv[2]);
+	request_str = snprintf(sizeof(request_str), "%s:%s", argv[1],argv[2]);
 
         if(send(sockfd, request_str, strlen(request_str), 0) == -1)
         {
