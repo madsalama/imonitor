@@ -9,6 +9,8 @@
 #include <sys/signal.h>
 #include <wait.h>
 
+#include "mmap_file.h"
+
 #define PID_PATH "/var/tmp/imonitor.pid"
 #define SOCK_PATH "/var/run/imonitor.socket"
 #define LOG_PATH "/var/log/imonitord.log"
@@ -23,6 +25,16 @@ void stop_server();
 void init_socket();
 
 int server_sockfd;
+
+/* imonitord: unix domain server daemon
+ * init();	 
+ * a. listens for imonitor requests on /var/run/monitor.socket 
+ * b. creates an inotify instance to serve upcoming watch requests dynamically
+
+ * handle();
+ * c. add/remove watches as per incoming requests
+ * d. calls watch handler in a subprocess (fork) -> while(1)/POLL
+ */
 
 int main(int argc, char *argv[])
 {
@@ -99,11 +111,21 @@ void handle_connection(int client_sockfd)
 		
 		buff[len]='\0';
 		if (!strcmp(&buff,"list")){
-			// handle "list" 
+			// handle "list"
+			// result = handle();
+			
+			// notify client with result
 			send(client_sockfd, "list handled!", 100, 0);	
 		}
-		// else if ...
-		// else if ...
+
+		// else
+		// buff=add:[PATH]
+		// EXTRACT ACTION/PATH:
+			// ACTION = add
+			// PATH = PATH
+		
+		// $ACTION watch for $PATH
+
 	}
 
         close(client_sockfd);
