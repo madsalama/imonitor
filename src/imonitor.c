@@ -35,13 +35,13 @@ int main(int argc, char *argv[])
         }
 
         remote.sun_family = AF_UNIX;
-        strcpy(remote.sun_path, "/var/run/imonitor.socket");
+        strcpy(remote.sun_path, "/tmp/imonitor.socket");
         len = strlen(remote.sun_path) + sizeof(remote.sun_family);
 
         if(connect(sockfd, (struct sockaddr *)&remote, len) == -1)
         {
 		// perror("Connect");
-		printf("imonitor: error connecting to daemon at unix:///var/run/imonitor.socket\n");
+		printf("imonitor: error connecting to daemon at unix:///tmp/imonitor.socket\n");
 		printf("imonitor: run 'systemctl start imonitord' then retry\n");
                 exit(1);
         }

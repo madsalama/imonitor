@@ -8,14 +8,17 @@
 #include <errno.h>
 #include <sys/signal.h>
 #include <wait.h>
+#include <sys/inotify.h>
+#include <unistd.h>
+#include <poll.h>
 
 #include "mmap_file.h"
 
 #define PID_PATH "/var/tmp/imonitor.pid"
-#define SOCK_PATH "/var/run/imonitor.socket"
+#define SOCK_PATH "/tmp/imonitor.socket"
 #define LOG_PATH "/var/log/imonitord.log"
 
-void fork_handler(int);
+void fork_handler(char* action, char* path);
 void handle_connection(int);
 void handle_child(int sig);
 void handle_args(int argc, char *argv[]);
@@ -39,6 +42,8 @@ int server_sockfd;
 int main(int argc, char *argv[])
 {
         int client_sockfd;
+        int fd;
+        // i, poll_num;
         struct sockaddr_un remote;
         int t;
 
@@ -58,6 +63,14 @@ int main(int argc, char *argv[])
         printf("Listening...\n");
         fflush(stdout);
 
+
+	// INITIALIZE INOTIFY 
+        fd = inotify_init1(IN_NONBLOCK);
+        if (fd == -1) {
+        perror("inotify_init1");
+              exit(EXIT_FAILURE);
+        }
+
         for(;;) //This might take a while...
         {
                 printf("Waiting for a connection\n");
@@ -71,23 +84,27 @@ int main(int argc, char *argv[])
 
                 printf("Accepted connection\n");
                 fflush(stdout);
-                //Yes, yes, forks = overhead, blahblah. If you need a high volume local
-                //echo server (Ô_o) this ain't it.
-                fork_handler(client_sockfd); 
+                
+		// fork_handler(client_sockfd); 
+		handle_connection(client_sockfd);
+
         }
 }
 
-void fork_handler(int client_sockfd)
+void fork_handler(char* action, char* path)
 {
         int status;
+	pid_t pid;
 
-        switch(fork())
+        switch(pid = fork())
         {
                 case -1:
                         perror("Error forking connection handler");
                         break;
                 case 0:
-                        handle_connection(client_sockfd);
+                        // handle_inotify(); = create watch, make child listening on inotify events
+                    
+                        while(1){}  // dummy
                         exit(0);
                 default:
                         break;
@@ -99,23 +116,35 @@ void handle_connection(int client_sockfd)
         char buff[1024];
         unsigned int len;
 
+	const char *list_str = "list";
+	const char *add_str = "add";
+	const char *remove_str = "remove";
+
 	printf("Handling connection\n");
         fflush(stdout);
 
         while(len = recv(client_sockfd, &buff, 1024, 0), len > 0)
 	{
-		// check received request
-		// if list -> list wd
-		// if add [path] -> add wd
-		// if remove [path/wd] -> remove wd
-		
-		buff[len]='\0';
-		if (!strcmp(&buff,"list")){
-			// handle "list"
-			// result = handle();
-			
-			// notify client with result
+		buff[len]='\0'; 
+		// *(buff+len)='\0'; // null-terminate buffer contents
+
+		// NOTE: IF NOT HANDLED, CLIENT BLOCKS (DAEMON WAITS)
+
+		if (!strcmp(buff,list_str)){
+			// Probably won't need a fork to 'list' watch descriptors/paths
 			send(client_sockfd, "list handled!", 100, 0);	
+		}
+
+	       /*
+               buff = "add:[PATH]"
+               ACTION = "add"
+               PATH = "/opt/web/tomcat"
+	       */
+
+		else { 
+
+			fork_handler("add","/var/log");
+			send(client_sockfd, &buff, 100, 0);
 		}
 
 		// else
@@ -131,7 +160,7 @@ void handle_connection(int client_sockfd)
         close(client_sockfd);
         printf("Done handling\n");
         fflush(stdout);
-        exit(0);
+        // exit(0);
 }
 
 void handle_child(int sig)
@@ -222,6 +251,9 @@ void init_socket()
         strcpy(local.sun_path, SOCK_PATH);
         unlink(local.sun_path);
         len = strlen(local.sun_path) + sizeof(local.sun_family);
+
+	chmod(local.sun_path, 0777); // enable permissons on socket file
+
         if(bind(server_sockfd, (struct sockaddr *)&local, len) == -1)
         {
                 perror("binding");
