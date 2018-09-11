@@ -114,11 +114,18 @@ void handle_request(char* request_buffer, char* response_buffer){
 // client is responsible to send correct format (error check at client)
 
 // deserialize request_buffer
-// struct request_data rd;
-// rd = deserialize_request_data(request_buffer);
-// char* action = rd.action;
-// char* path = rd.path;
-// int wd_id  = rd.wd;
+
+/*
+struct request_data rd, *rd_ptr;
+rd_ptr=&rd;
+
+deserialize_request_data(request_buffer, rd_ptr);
+
+char* action = rd.action;
+char* path = rd.path;
+int wd_id = rd.wd;
+*/
+
 
 char* action = "add";
 char* path = "/var/log";
@@ -156,7 +163,9 @@ void handle_connection(int client_sockfd)
 	
 									     // ^ handle potential buffer overflow
         while(len = recv(client_sockfd, &request_buffer, PATH_MAX , 0), (len > 0 && len < PATH_MAX) ){
-		request_buffer[len]='\0'; // null-terminate request string
+		// request_buffer[len]='\0'; // null-terminate request string
+
+		// note: request_buffer now is a serialized of struct request_data
 		handle_request( (char*)request_buffer, (char*)response_buffer);
 		send(client_sockfd, &response_buffer, PATH_MAX, 0);
 	}

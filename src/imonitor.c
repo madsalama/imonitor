@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
         int sockfd, t, len;
         struct sockaddr_un remote;
 
-	char request_buffer[PATH_MAX], *ptr;
+	unsigned char request_buffer[PATH_MAX], *ptr;
 	char response_buffer[PATH_MAX];
 	struct request_data rd, *rd_ptr;
 	rd_ptr=&rd;
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 	if (strcmp(argv[1],"list")){
 		rd.action = argv[1];
 		rd.path = argv[2];
-		rd.wd = 100; // (int)strtol(argv[3],(char **)NULL,1024); 
+		rd.wd = 9999; // (int)strtol(argv[3],(char **)NULL,1024); 
 	}
 	else{
 		rd.action = "list";
@@ -69,10 +69,6 @@ int main(int argc, char *argv[])
 
 	// SERIALIZE STRUCT -> request_buffer
 	ptr = serialize_request_data(request_buffer, rd_ptr);
-	request_buffer[ptr - request_buffer]='\0';
-
-	printf("imonitor: local request_buffer = %s \n", request_buffer);
-
         if(send(sockfd, request_buffer, ptr - request_buffer , 0) == -1)
         {
             perror("Send");
