@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#include "serialize.h"
+
+#define SOCK_PATH "/tmp/imonitor.socket"
+
 // imonitor.c | unix socket client for managing imonitor daemon = (daemon.c)
 // USAGE: monitor [add|remove|list|help]
 
@@ -18,60 +22,75 @@ int main(int argc, char *argv[])
 
 	if (argc == 1){
       	   printf("imonitor: no arguments. [hint: imonitor help]\n");
-	   exit(1);
+	   exit(EXIT_FAILURE);
 	}
 
 	check_arg(argc, argv[1]);
 
         int sockfd, t, len;
         struct sockaddr_un remote;
-	char request_str[PATH_MAX+5];
-	char response_str[500];
 
-        if((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
+	unsigned char* request_buffer;
+	unsigned char response_buffer[PATH_MAX];
+        
+	struct request_data rd;
+        
+	if((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
         {
                 perror("Socket");
-                exit(1);
+                exit(EXIT_FAILURE);
         }
 
         remote.sun_family = AF_UNIX;
-        strcpy(remote.sun_path, "/tmp/imonitor.socket");
+        strcpy(remote.sun_path, SOCK_PATH);
         len = strlen(remote.sun_path) + sizeof(remote.sun_family);
 
         if(connect(sockfd, (struct sockaddr *)&remote, len) == -1)
         {
 		// perror("Connect");
-		printf("imonitor: error connecting to daemon at unix:///tmp/imonitor.socket\n");
+		printf("imonitor: error connecting to daemon at unix://%s\n", SOCK_PATH);
 		printf("imonitor: run 'systemctl start imonitord' then retry\n");
-                exit(1);
+                exit(EXIT_FAILURE);
         }
 
-        // printf("connected to daemon\n");
+	// BUILD STRUCT REQUEST DATA
+	// IN EMPTY CASES WE AVOID SENDING NULL POINTERS BY ADDING DUMMY VALUE
+	
+	if (strcmp(argv[1],"list")){
+		rd.action = argv[1];
+		rd.path = argv[2];
+		rd.wd = (int)strtol(argv[2],(char **)NULL,1024); 
+	}
+	else{
+		rd.action = "list";
+		rd.path = "N/A";
+		rd.wd = 0; 
+	}
 
-	// REQUEST FORMAT = "ACTION:PATH"
-	if (strcmp(argv[1],"list"))
-		snprintf(request_str, sizeof(request_str), "%s:%s", argv[1],argv[2]);
-	else
-		strcpy(request_str, argv[1]);
+	// SERIALIZE STRUCT -> request_buffer
 
-        if(send(sockfd, request_str, strlen(request_str), 0) == -1)
+	request_buffer = calloc(PATH_MAX,sizeof(char));
+	char* buffer = serialize_request_data(request_buffer, rd);
+
+        if(send(sockfd, &buffer, sizeof(request_buffer), 0) == -1)
         {
             perror("Send");
-            exit(1);
+            exit(EXIT_FAILURE);
         }
 
-        if((t = recv(sockfd, &response_str, 500, 0)) > 0)
+        if((t = recv(sockfd, &response_buffer, 500, 0)) > 0)
         {
-            printf("imonitord: %s \n", response_str);
+            printf("imonitord: %s \n", response_buffer);
         }
-         else
+        else
          {
             if(t < 0) perror("recv");
             else printf("Server closed connection");
-            exit(1);
+            exit(EXIT_FAILURE);
          }
 
         close(sockfd);
+	free(request_buffer);
         return 0;
 }
 
@@ -81,16 +100,16 @@ void check_arg(int argc, char* arg){
 	{
 		printf("imonitor: %s is not a valid argument\n", arg);
 		synopsis();
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	if ( !strcmp(arg,"help") ) {
 		help();
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	else if ( !strcmp(arg,"add") || !strcmp(arg,"remove")) {
 		if (argc<3){
 			printf("imonitor: watch descriptor or path required\n");
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 	}
 
