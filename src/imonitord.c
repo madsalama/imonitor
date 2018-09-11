@@ -110,7 +110,7 @@ char *output request_substring(char* input){
 
 void handle_request(char* request_buffer, char* response_buffer){
 
-// request format: <action>:<path|wd>
+// request format: <action>:<path>:<wd>
 // client is responsible to send correct format (error check at client)
 
 // deserialize request_buffer
@@ -155,10 +155,10 @@ void handle_connection(int client_sockfd)
         fflush(stdout);
 	
 									     // ^ handle potential buffer overflow
-        while(len = recv(client_sockfd, &request_buffer, 100 , 0), (len > 0 && len < PATH_MAX) ){
-		// request_buffer[len]='\0'; // null-terminate request string
+        while(len = recv(client_sockfd, &request_buffer, PATH_MAX , 0), (len > 0 && len < PATH_MAX) ){
+		request_buffer[len]='\0'; // null-terminate request string
 		handle_request( (char*)request_buffer, (char*)response_buffer);
-		send(client_sockfd, &response_buffer, 100, 0);
+		send(client_sockfd, &response_buffer, PATH_MAX, 0);
 	}
 
         close(client_sockfd);

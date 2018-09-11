@@ -63,14 +63,13 @@ int main(int argc, char *argv[])
 	}
 	else{
 		rd.action = "list";
-		rd.path = "gagagogo";
+		rd.path = "list_dummy_path";
 		rd.wd = 100; 
 	}
 
-	printf("WD: %d\n", rd.wd);
-
 	// SERIALIZE STRUCT -> request_buffer
 	ptr = serialize_request_data(request_buffer, rd_ptr);
+	request_buffer[ptr - request_buffer]='\0';
 
 	printf("imonitor: local request_buffer = %s \n", request_buffer);
 
