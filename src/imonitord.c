@@ -115,12 +115,14 @@ void handle_request(char* request_buffer, char* response_buffer){
 
 // deserialize request_buffer
 
-/*
+
 struct request_data rd, *rd_ptr;
 rd_ptr=&rd;
 
 deserialize_request_data(request_buffer, rd_ptr);
+int rd_action = rd_ptr->wd;
 
+/*
 char* action = rd.action;
 char* path = rd.path;
 int wd_id = rd.wd;
@@ -137,7 +139,7 @@ int wd_id = 0;
 		}
 		else {
 			++watch_count;
-                        sprintf(response_buffer, "[DEBUG]: %s | [INFO] Watch added on %s", request_buffer , path);
+                        sprintf(response_buffer, "[DESERIALIZE]: %d | [INFO] Watch added on %s", rd_action /*request_buffer*/ , path);
                      }
 	}
 
