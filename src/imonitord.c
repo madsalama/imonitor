@@ -130,7 +130,7 @@ int wd_id = 0;
 		}
 		else {
 			++watch_count;
-                        sprintf(response_buffer, "[DEBUG]: %s | [INFO] Watch added on %s",request_buffer-2 , path);
+                        sprintf(response_buffer, "[DEBUG]: %s | [INFO] Watch added on %s", request_buffer , path);
                      }
 	}
 
@@ -148,15 +148,16 @@ int wd_id = 0;
 
 void handle_connection(int client_sockfd)
 {
-        unsigned char* request_buffer = calloc(PATH_MAX,sizeof(char));
+        unsigned char request_buffer[PATH_MAX]; 
 	unsigned char response_buffer[PATH_MAX];
         unsigned int len;
 	printf("Handling connection\n");
         fflush(stdout);
+	
 									     // ^ handle potential buffer overflow
-        while(len = recv(client_sockfd, &request_buffer, 1024, 0), (len > 0 && len < PATH_MAX) ){
-		request_buffer[len]='\0'; // null-terminate request string
-		handle_request( (char*) &request_buffer, (char*) &response_buffer);
+        while(len = recv(client_sockfd, &request_buffer, 100 , 0), (len > 0 && len < PATH_MAX) ){
+		// request_buffer[len]='\0'; // null-terminate request string
+		handle_request( (char*)request_buffer, (char*)response_buffer);
 		send(client_sockfd, &response_buffer, 100, 0);
 	}
 
