@@ -122,7 +122,7 @@ deserialize_request_data(request_buffer, rd_ptr);
 
 char* action = rd.action;
 char* path = rd.path;
-int wd_id = rd.wd;
+int wd_id = rd_ptr -> wd;
 
 	if(!strcmp(action,"add")){
 
