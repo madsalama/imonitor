@@ -32,7 +32,7 @@ void init_socket();
 
 int server_sockfd;
 int fd;
-int *wd;
+int* wd;
 int watch_count;
 
 /* imonitord: unix domain server daemon
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 
         if(argc > 1) {handle_args(argc, argv);}
 
-        signal(SIGCHLD, handle_child);  // A CHILD RECEIVED A SIG, WHAT SHOULD PARENT DO?
+        signal(SIGCHLD, handle_child);  // A CHILD RECEIVED A SIG, WHAT SHOULD PARENT DO...?
         signal(SIGTERM, stop_server);
 
         init_socket();
@@ -70,25 +70,27 @@ int main(int argc, char *argv[])
         fflush(stdout);
 
 
-	// INITIALIZE INOTIFY 
+	// INITIALIZE INOTIFY INSTANCE
         fd = inotify_init1(IN_NONBLOCK);
         if (fd == -1) {
         perror("inotify_init1");
               exit(EXIT_FAILURE);
         }
 
-	// WD
+	// ALLOCATE MEMORY FOR WATCH DESCRIPTORS
 	wd = calloc(MAX_WATCH, sizeof(int));
         if (wd == NULL) {
 	        perror("calloc");
 		exit(EXIT_FAILURE);
         }
 
-        for(;;) //This might take a while...
+        for(;;) // MAIN LOOP
         {
                 printf("Waiting for a connection\n");
                 fflush(stdout);
                 t = sizeof(remote);
+	
+		// accept() will block until a connection is received
                 if((client_sockfd = accept(server_sockfd, (struct sockaddr *)&remote, &t)) == -1)
                 {
                         perror("accept");
@@ -99,19 +101,19 @@ int main(int argc, char *argv[])
                 fflush(stdout);
                 
 		handle_connection(client_sockfd);
+
+		// if (poll()){
+		//	handle_inotify_events();
+		// }
+
         }
 }
 
-/*
-char *output request_substring(char* input){
-
-}
-*/
 
 void handle_request(char* request_buffer, char* response_buffer){
 
-// request format: 'action path wd\0'   // no spaces in the buffer, added for readablity
-// client is responsible to send correct format (error check at client)
+// request format: '<action_len><path_len><wd><action><path>\0'
+// client is responsible to send correct format (errors checked at client)
 
 // deserialize request_buffer
 
@@ -127,16 +129,19 @@ int wd_id = rd_ptr -> wd;
 	if(!strcmp(action,"add")){
 
 		if( (wd[watch_count] = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){
-                        sprintf(response_buffer, "Could not add watch on %s : %s", path, strerror(errno));
+                        sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
 		}
 		else {
-			++watch_count;
+			watch_count++;
                         sprintf(response_buffer, "[INFO] Watch added on %s | request_buffer_wd: %d ", path, wd_id );
                      }
 	}
 
 	else if (!strcmp(action,"remove")){
 
+		// if client sends path, map path to corresponding wd
+		// else if client sends wd, use it directly
+		
                 if( inotify_rm_watch(fd, wd_id) == -1  ){
                         sprintf(response_buffer, "Could not remove watch on %s : %s", path, strerror(errno));
                 }
