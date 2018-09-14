@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 	if (strcmp(argv[1],"list")){
 		rd.action_len = strlen(argv[1]);
 		rd.path_len   = strlen(argv[2]);
-		rd.wd = 255; // (int)strtol(argv[3],(char **)NULL,1024);
+		rd.wd = 300; // (int)strtol(argv[3],(char **)NULL,1024);
 		strcpy(rd.action, argv[1]);
 		strcpy(rd.path, argv[2]);
 	}
@@ -78,14 +78,13 @@ int main(int argc, char *argv[])
 
 	ptr = serialize_request_data(request_buffer, rd_ptr);
 
-/*
 	// ==== DESERIALIZE_TEST ====
 
 
 	struct request_data rdd, *rdd_ptr;
 	rdd_ptr=&rdd;
 
-	rdd_ptr = deserialize_request_data(request_buffer, rdd_ptr);
+	deserialize_request_data(request_buffer, rdd_ptr);
 	
 	request_buffer[ptr-request_buffer] = '\0'; 
 	// printf("request_buffer at client = %s \n", request_buffer);
@@ -94,7 +93,7 @@ int main(int argc, char *argv[])
         printf("struct contents = %d %d %d { %s:%s }\n", rdd_ptr -> action_len, rdd_ptr -> path_len, rdd_ptr -> wd, rdd_ptr -> action, rdd_ptr -> path );
 
  	exit(1);
-*/
+
 
 	// ==========================
 	

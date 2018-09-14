@@ -131,7 +131,7 @@ int wd_id = rd.wd;
 		}
 		else {
 			++watch_count;
-                        sprintf(response_buffer, "[INFO] Watch added on %s", path);
+                        sprintf(response_buffer, "[INFO] Watch added on %s | request_buffer_wd: %d ", path, wd_id );
                      }
 	}
 
@@ -146,7 +146,7 @@ int wd_id = rd.wd;
                      }
 	}
 	else if (!strcmp(action,"list")){
-		sprintf(response_buffer, "Listing watches...\n");
+		sprintf(response_buffer, "Listing watches...");
 	}
 }
 

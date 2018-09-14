@@ -19,10 +19,10 @@ int deserialize_int(unsigned char* request_buffer){
 
 	int value = 0;
 
-	value += (request_buffer[0] << 24) & 0xFF;
-	value += (request_buffer[1] << 16) & 0xFF;
-	value += (request_buffer[2] << 8)  & 0xFF;
-	value += (request_buffer[3])       & 0xFF;
+	value += (request_buffer[0] << 24 );
+	value += (request_buffer[1] << 16);
+	value += (request_buffer[2] << 8);
+	value += (request_buffer[3]);
 	
 	return value; 
 }
@@ -55,7 +55,7 @@ unsigned char* serialize_request_data (unsigned char* request_buffer, struct req
 
 // 000 3 000 8 000 255 add /var/log 
 
-struct request_data* deserialize_request_data(unsigned char* request_buffer, struct request_data *rd)
+void deserialize_request_data(unsigned char* request_buffer, struct request_data *rd)
 {
         int action_length;
 	int path_length;
@@ -95,7 +95,6 @@ struct request_data* deserialize_request_data(unsigned char* request_buffer, str
 
 	request_buffer = request_buffer + path_length; 
 
-	return rd;
 	
 }
 
