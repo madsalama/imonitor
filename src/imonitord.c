@@ -125,13 +125,13 @@ char* path = rd.path;
 int wd_id = rd.wd;
 
 	if(!strcmp(action,"add")){
+
 		if( (wd[watch_count] = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){
                         sprintf(response_buffer, "Could not add watch on %s : %s", path, strerror(errno));
 		}
 		else {
 			++watch_count;
-                        sprintf(response_buffer, "[DEBUG|ACTION|PATH]: %s:%s | \
-[INFO] Watch added on %s", action , path, path);
+                        sprintf(response_buffer, "[INFO] Watch added on %s", path);
                      }
 	}
 
@@ -144,6 +144,9 @@ int wd_id = rd.wd;
                         --watch_count;
                         sprintf(response_buffer, "Watch on %s removed", path);
                      }
+	}
+	else if (!strcmp(action,"list")){
+		sprintf(response_buffer, "Listing watches...\n");
 	}
 }
 

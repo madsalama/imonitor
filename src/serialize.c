@@ -79,19 +79,18 @@ struct request_data* deserialize_request_data(unsigned char* request_buffer, str
 
 	request_buffer = request_buffer + 4;
 
-	char action_string[action_length];
-	char path_string[path_length];
-
-	strncpy(action_string, request_buffer, action_length);
-	action_string[action_length] = '\0';
-        rd -> action = action_string;
+	strncpy( rd -> action , request_buffer, action_length);
+	rd -> action[action_length] = '\0';
 	printf("deserialize: action_string = %s \n", rd -> action );
+
+	// rd -> action = action_string;	// set address of struct pointer to action_string! (after function returns this address may be corrupted and thus holds garbage or only part of the data)!
+	
+	// we need to set actual data pointed to by rd -> action
 
 	request_buffer = request_buffer + action_length;
 
-	strncpy(path_string, request_buffer, path_length);
-        path_string[path_length] = '\0';
-        rd -> path = path_string;
+	strncpy(rd -> path, request_buffer, path_length);
+        rd -> path[path_length] = '\0';
         printf("deserialize: path_string = %s \n", rd -> path );
 
 	request_buffer = request_buffer + path_length; 

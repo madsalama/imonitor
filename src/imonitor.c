@@ -60,8 +60,16 @@ int main(int argc, char *argv[])
 		rd.action_len = strlen(argv[1]);
 		rd.path_len   = strlen(argv[2]);
 		rd.wd = 255; // (int)strtol(argv[3],(char **)NULL,1024);
-		rd.action = argv[1];
-                rd.path = argv[2];
+		strcpy(rd.action, argv[1]);
+		strcpy(rd.path, argv[2]);
+	}
+	else
+	{
+		rd.action_len = strlen(argv[1]);
+		rd.path_len   = 0;
+		rd.wd = 0; 
+		strcpy(rd.action, argv[1]);
+		strcpy(rd.path, "");
 	}
 
         // SERIALIZE STRUCT -> request_buffer
@@ -70,23 +78,24 @@ int main(int argc, char *argv[])
 
 	ptr = serialize_request_data(request_buffer, rd_ptr);
 
-
+/*
 	// ==== DESERIALIZE_TEST ====
 
-// /*
-	struct request_data rdd, *rdd_ptr;
-	rdd_ptr=&rdd; 
 
-	deserialize_request_data(request_buffer, rdd_ptr);
+	struct request_data rdd, *rdd_ptr;
+	rdd_ptr=&rdd;
+
+	rdd_ptr = deserialize_request_data(request_buffer, rdd_ptr);
 	
-	// request_buffer[ptr-request_buffer] = '\0'; 
+	request_buffer[ptr-request_buffer] = '\0'; 
 	// printf("request_buffer at client = %s \n", request_buffer);
 
-        printf("request_buffer = %d %d %d %s %s\n", rdd_ptr -> action_len, rdd_ptr -> path_len, rdd_ptr -> wd, rdd_ptr -> action, rdd_ptr -> path );
+	
+        printf("struct contents = %d %d %d { %s:%s }\n", rdd_ptr -> action_len, rdd_ptr -> path_len, rdd_ptr -> wd, rdd_ptr -> action, rdd_ptr -> path );
 
  	exit(1);
+*/
 
-// */
 	// ==========================
 	
         if(send(sockfd, request_buffer, ptr - request_buffer , 0) == -1)

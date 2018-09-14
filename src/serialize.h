@@ -1,12 +1,14 @@
 #ifndef SERIALIZE_H
 #define SERIALIZE_H
 
+#include <limits.h>
+
 struct request_data {
 	int action_len;
 	int path_len;
 	int wd;
-	char* action;
-        char* path;
+	char action[100];
+        char path[PATH_MAX];
 };
 
 unsigned char* serialize_int (unsigned char* request_buffer, int value);
