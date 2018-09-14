@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
 
 	ptr = serialize_request_data(request_buffer, rd_ptr);
 
+
 	// ==== DESERIALIZE_TEST ====
 
 // /*
@@ -77,7 +78,7 @@ int main(int argc, char *argv[])
 	rdd_ptr=&rdd; 
 
 	deserialize_request_data(request_buffer, rdd_ptr);
-
+	
 	// request_buffer[ptr-request_buffer] = '\0'; 
 	// printf("request_buffer at client = %s \n", request_buffer);
 
