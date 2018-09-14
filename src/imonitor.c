@@ -57,18 +57,11 @@ int main(int argc, char *argv[])
 	// IN EMPTY CASES WE AVOID SENDING NULL POINTERS BY ADDING DUMMY VALUE
 	
 	if (strcmp(argv[1],"list")){
-		rd.action = argv[1];
-		rd.path = argv[2];
-		rd.wd = 255; // (int)strtol(argv[3],(char **)NULL,1024); 
 		rd.action_len = strlen(argv[1]);
 		rd.path_len   = strlen(argv[2]);
-	}
-	else{
-		rd.action = "list";
-		rd.path = "x";
-		rd.wd = 255;
-		rd.action_len = 5; 
-		rd.path_len = 5; 
+		rd.wd = 255; // (int)strtol(argv[3],(char **)NULL,1024);
+		rd.action = argv[1];
+                rd.path = argv[2];
 	}
 
         // SERIALIZE STRUCT -> request_buffer
@@ -76,17 +69,25 @@ int main(int argc, char *argv[])
         // request_buffer's first 2*ints = 2*4 bytes = 8 bytes -> are now holding lengths
 
 	ptr = serialize_request_data(request_buffer, rd_ptr);
-	
-	/* request_buffer[ptr - request_buffer] = '\0'; */
-	
+
+	// ==== DESERIALIZE_TEST ====
+
+// /*
 	struct request_data rdd, *rdd_ptr;
-	rdd_ptr=&rdd;
+	rdd_ptr=&rdd; 
 
 	deserialize_request_data(request_buffer, rdd_ptr);
-	
-        printf("deserialize: %s | %s | %d | %d | %d \n", rdd.action, rdd.path, rdd.wd, rdd.action_len, rdd.path_len ); 
-	exit(1);
 
+	// request_buffer[ptr-request_buffer] = '\0'; 
+	// printf("request_buffer at client = %s \n", request_buffer);
+
+        printf("request_buffer = %d %d %d %s %s\n", rdd_ptr -> action_len, rdd_ptr -> path_len, rdd_ptr -> wd, rdd_ptr -> action, rdd_ptr -> path );
+
+ 	exit(1);
+
+// */
+	// ==========================
+	
         if(send(sockfd, request_buffer, ptr - request_buffer , 0) == -1)
         {
             perror("Send");

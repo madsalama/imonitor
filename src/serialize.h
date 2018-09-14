@@ -2,9 +2,9 @@
 #define SERIALIZE_H
 
 struct request_data {
-        int wd;
 	int action_len;
 	int path_len;
+	int wd;
 	char* action;
         char* path;
 };
@@ -16,6 +16,6 @@ unsigned char* serialize_string (unsigned char* request_buffer, int length, char
 void deserialize_string (unsigned char* request_buffer, int length, char* string);
 
 unsigned char* serialize_request_data (unsigned char* request_buffer, struct request_data *rd);
-unsigned char* deserialize_request_data(unsigned char* request_buffer, struct request_data *rd);
+struct request_data* deserialize_request_data(unsigned char* request_buffer, struct request_data *rd);
 
 #endif /*SERIALIZE_H*/

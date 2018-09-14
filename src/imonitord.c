@@ -115,21 +115,14 @@ void handle_request(char* request_buffer, char* response_buffer){
 
 // deserialize request_buffer
 
-//struct request_data rd, *rd_ptr;
-//rd_ptr=&rd;
+struct request_data rd, *rd_ptr;
+rd_ptr=&rd;
 
-//deserialize_request_data(request_buffer, rd_ptr);
+deserialize_request_data(request_buffer, rd_ptr);
 
-/*
 char* action = rd.action;
 char* path = rd.path;
 int wd_id = rd.wd;
-*/
-
-// TESTING
-char* action = "add";
-char* path = "/var/log";
-int wd_id = 5;
 
 	if(!strcmp(action,"add")){
 		if( (wd[watch_count] = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){
@@ -137,7 +130,8 @@ int wd_id = 5;
 		}
 		else {
 			++watch_count;
-                        sprintf(response_buffer, "[BUFFER]: %s | [INFO] Watch added on %s", request_buffer , path);
+                        sprintf(response_buffer, "[DEBUG|ACTION|PATH]: %s:%s | \
+[INFO] Watch added on %s", action , path, path);
                      }
 	}
 
@@ -164,8 +158,8 @@ void handle_connection(int client_sockfd)
 									     // ^ handle potential buffer overflow
         while(len = recv(client_sockfd, &request_buffer, PATH_MAX , 0), (len > 0 && len < PATH_MAX) ){
 		
-		// note#1: no need to null-terminate since client sends '\0' at the end of the buffer
-		// note#2: request_buffer is a serialized struct request_data{};
+		// note: request_buffer should contain a serialized request_data struct 
+		request_buffer[len] = '\0';
 		handle_request( (char*)request_buffer, (char*)response_buffer);   // calls deserialize and handles request
 
 		// after handle_request is returned, response buffer is set and ready to be sent back to client
