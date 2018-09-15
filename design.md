@@ -17,13 +17,17 @@ M /opt/web/app/tomcat/ecycc8/conf/cycc/web_templates/serviceportal/check-number.
 D /opt/web/app/tomcat/ecycc8/conf/cycc/web_templates/serviceportal/deleteme.ftl	
 ```
 ## Component Implementation
-- UNIX_SOCKET CLIENT/SERVER:
-1. client <= send message to server (done, request format is action:path/wd | example: add:/opt ; remove:34 ; list:[null])
-2. server <= inotify/track watches + handle message from client => fork watch handler.
+- UNIX_SOCKET CLIENT/SERVER: [#DONE]
+  - serialize/deserialize request_data
+  - handle request depending on payload data -> dummy
+- inotify/track watches + handle message from client, no need to fork children per request since daemon will use long polling on watches. 
 
-- Generate/update change reports for each watch.
-
-## Pseudo Implementation
+### Challenges! 
+- daemon will get slower handling of requests if number of watches are too large or polling is too frequent, how to scale?
+- what type of reports needed per watch? how to separate reports per watch as well?
+- how to actually generate above report!? 
+  
+## Pseudo for inotify!
 ```
 // MONITORING application.properties:
 OPENED..?
