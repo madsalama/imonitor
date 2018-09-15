@@ -63,13 +63,14 @@ int main(int argc, char *argv[])
 
 	if (strcmp(argv[1],"list")){
 		
-		if (!strcmp(argv[1], "add")){
+		// if (!strcmp(argv[1], "add") || !strcmp(argv[1], "remove") ){
 			rd.action_len = strlen(argv[1]);
 	                rd.path_len   = strlen(argv[2]);
 	                rd.wd = 0; 
 	                strcpy(rd.action, argv[1]);
 	                strcpy(rd.path, argv[2]);
-		}
+		// }
+		/*
 		else if (!strcmp(argv[1], "remove"))
 		{
 			rd.action_len = strlen(argv[1]);
@@ -77,7 +78,7 @@ int main(int argc, char *argv[])
 			rd.wd = (int)strtol(argv[2],(char **)NULL,10);
 			strcpy(rd.action, argv[1]);
 			strcpy(rd.path, "");
-		}
+		} */
 	}
 	
 	else {
@@ -136,7 +137,7 @@ void check_arg(int argc, char* arg){
 
 	if ( strcmp(arg,"add") && strcmp(arg,"remove") && strcmp(arg,"help") && strcmp(arg,"list") ) 
 	{
-		printf("imonitor: %s is not a valid argument\n", arg);
+		printf("imonitor: [ERROR] %s is not a valid argument\n", arg);
 		synopsis();
 		exit(EXIT_FAILURE);
 	}
@@ -146,7 +147,7 @@ void check_arg(int argc, char* arg){
 	}
 	else if ( !strcmp(arg,"add") || !strcmp(arg,"remove")) {
 		if (argc<3){
-			printf("imonitor: watch descriptor or path required\n");
+			printf("imonitor: [ERROR] watch descriptor or path required\n");
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -154,15 +155,15 @@ void check_arg(int argc, char* arg){
 }
 
 void synopsis(){
-	printf("$imonitor [add|remove|list|help]\n");
+	printf("$ imonitor [add|remove] [PATH] | [list] | [help]\n");
 }
 
 void help(){
 	printf("\nimonitor: client for imonitord to manage multiple inotify watches\n\n\
 commands:\n\
-$ imonitor add [PATH]       # request a new watch on specified path\n\
-$ imonitor remove [WD|PATH] # request to remove watch on specified path (if found)\n\
-$ imonitor list             # request a list of paths for running watches\n\
+$ imonitor add [PATH]       # add an inotify watch on specified path\n\
+$ imonitor remove [PATH]    # remove an inotify watch on specified path (if found)\n\
+$ imonitor list             # list current watches\n\
 $ imonitor help             # prints this help\n\
 ");
 }

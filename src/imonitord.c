@@ -19,7 +19,7 @@
 #define SOCK_PATH "/tmp/imonitor.socket"
 #define LOG_PATH "/var/tmp/imonitord.log"
 
-#define MAX_WATCH 100 // should be configurable
+#define MAX_WATCH 1024
 
 void handle_connection(int);
 void handle_request(char* request_buffer, char* response_buffer);
@@ -33,9 +33,15 @@ void init_socket();
 int server_sockfd;
 int fd;
 
-int* wd;
-char** paths;
+// int* wd;
+// char** paths;   // paths = [ paths[0], *paths, *paths, .... ]   // paths[0] = "string1" 
 
+struct watch_table{
+        int wd;
+        char path[PATH_MAX];
+};
+
+struct watch_table* wtable ;
 int watch_count;
 
 /* imonitord: unix domain server daemon
@@ -80,6 +86,7 @@ int main(int argc, char *argv[])
               exit(EXIT_FAILURE);
         }
 
+/*
 	// ALLOCATE MEMORY FOR WATCH DESCRIPTORS
 	wd = calloc(MAX_WATCH, sizeof(int));
         if (wd == NULL) {
@@ -93,7 +100,14 @@ int main(int argc, char *argv[])
 		perror("calloc");
 		exit(EXIT_FAILURE);
 	}
-	
+*/
+
+	// more elegant way of creating a key/value table
+	wtable = calloc( MAX_WATCH, sizeof(struct watch_table) );
+	if (wtable == NULL){
+	        perror("calloc");
+        	exit(EXIT_FAILURE);
+	}
 
         for(;;) // MAIN LOOP
         {
@@ -133,41 +147,52 @@ rd_ptr=&rd;
 
 deserialize_request_data(request_buffer, rd_ptr);
 
-char* action = rd.action;
+char action[10];
+strcpy(action, rd.action);
+
 char path[PATH_MAX];
 strcpy(path, rd.path);
-int wd_id = rd_ptr -> wd;
 
-	if(!strcmp(action,"add")){
-	if( (wd[watch_count] = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){
-                        sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
+// int wd_id = rd_ptr -> wd;
+
+if(!strcmp(action,"add")){
+
+	if( (wtable[watch_count].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){
+		sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));}
+
+	// MAX_WATCH not exceeded
+	else if (watch_count < MAX_WATCH) {
+		// WATCH is not already added
+		if ( ((watch_count > 0) && (wtable[watch_count].wd != wtable[watch_count-1].wd)) || (watch_count == 0) ){
+			strcpy(wtable[watch_count].path, path); // printf("[DEBUG]: Path added: %s \n", wtable[watch_count].path);
+			watch_count++; // printf("[DEBUG]: watch_count incremented = %d \n", watch_count);
+			sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d", path, watch_count);
 		}
 		else {
-			if ( ((watch_count > 0) && (wd[watch_count] != wd[watch_count-1])) || (watch_count == 0) ){
-				// strncpy(paths[watch_count], rd.path, rd.path_len);
-				// paths[watch_count] = "3abdo";
-				printf("[DEBUG]: Path added: %s \n", paths[watch_count]);
-				
-				watch_count++;
-				printf("[DEBUG]: watch_count incremented = %d \n", watch_count);
-			}
-			sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d", path, watch_count);
-                     }
+			sprintf(response_buffer, "[WARN] Watch already added on %s | watch_count: %d", path, watch_count);
+		}
 	}
+	else {
+	sprintf(response_buffer, "[ERROR] Max number of watches exceeded. Remove some watches and try again | MAX_WATCH = %d", MAX_WATCH); 
+	}
+}
 
 	else if (!strcmp(action,"remove")){
 
 		// if client sends path, map path to corresponding wd
 		// else if client sends wd, use it directly
 		
-                if( inotify_rm_watch(fd, wd_id) == -1  ){
-                        sprintf(response_buffer, "[ERROR] Could not remove watch %d : %s", wd_id, strerror(errno));
+		// int wd = lookup_wd(path);
+		int wd = 1;
+		
+                if( inotify_rm_watch(fd, wd) == -1  ){
+                        sprintf(response_buffer, "[ERROR] Could not remove watch on %d : %s", wd, strerror(errno));
                 }
                 else {
-                        sprintf(response_buffer, "[INFO] Watch on %s removed", paths[watch_count-1]);
-			wd[watch_count-1] = 0; // invalidate current watch-descriptor
-			paths[watch_count-1] = NULL; // invalidate path
-			watch_count--;        // decrement watch_count
+                        sprintf(response_buffer, "[INFO] Watch on %s removed", wtable[watch_count-1].path);
+			wtable[watch_count-1].wd = 0;    // invalidate current watch-descriptor
+			// wtable[watch_count-1].path = ""; // invalidate path (no need, it's an array)
+			watch_count--;                   // decrement watch_count
                      }
 	}
 	else if (!strcmp(action,"list")){
@@ -228,7 +253,7 @@ void kill_daemon()
                 printf("Killing PID %d\n", pid);
                 kill(pid, SIGTERM); //kill it gently
 	        close(fd);
-        	free(wd);
+        	free(wtable);
         }
         else
         {
@@ -273,7 +298,7 @@ void stop_server()
         kill(0, SIGKILL);  //Infanticide :(
         
 	close(fd);
-        free(wd);
+        free(wtable);
         exit(EXIT_SUCCESS);
 }
 
