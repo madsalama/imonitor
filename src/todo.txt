@@ -1,4 +1,6 @@
-1- handle trailing \n when listing watch paths
-2- add implementation for handling polling inotify watches in:
-	- inotifier.h/inotifier.c
-3- handle the required report formatting.
+-1- handle trailing '\n' char when listing watch paths
+-2- cache watch_list; if watch_list not changed;
+respond with cached result instead of going through the whole list again. (expensive strcat!)
+
+-3- implementation for handling polling inotify watches.
+-4- implementation to handle the required report formatting according to watch events.
