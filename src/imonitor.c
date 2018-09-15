@@ -55,16 +55,32 @@ int main(int argc, char *argv[])
 
 	// BUILD STRUCT REQUEST DATA
 	// IN EMPTY CASES WE AVOID SENDING NULL POINTERS BY ADDING DUMMY VALUE
-	
+
+	// argv[2] is either path or wd
+	// if argv[1] is add  then set path = argv[2]
+	//
+	// else then wd =  (int) argv[2]
+
 	if (strcmp(argv[1],"list")){
-		rd.action_len = strlen(argv[1]);
-		rd.path_len   = strlen(argv[2]);
-		rd.wd = 1024; // (int)strtol(argv[3],(char **)NULL,1024);
-		strcpy(rd.action, argv[1]);
-		strcpy(rd.path, argv[2]);
+		
+		if (!strcmp(argv[1], "add")){
+			rd.action_len = strlen(argv[1]);
+	                rd.path_len   = strlen(argv[2]);
+	                rd.wd = 0; 
+	                strcpy(rd.action, argv[1]);
+	                strcpy(rd.path, argv[2]);
+		}
+		else if (!strcmp(argv[1], "remove"))
+		{
+			rd.action_len = strlen(argv[1]);
+			rd.path_len   = 0;
+			rd.wd = (int)strtol(argv[2],(char **)NULL,10);
+			strcpy(rd.action, argv[1]);
+			strcpy(rd.path, "");
+		}
 	}
-	else
-	{
+	
+	else {
 		rd.action_len = strlen(argv[1]);
 		rd.path_len   = 0;
 		rd.wd = 0; 

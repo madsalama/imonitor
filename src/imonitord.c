@@ -32,7 +32,10 @@ void init_socket();
 
 int server_sockfd;
 int fd;
+
 int* wd;
+char** paths;
+
 int watch_count;
 
 /* imonitord: unix domain server daemon
@@ -83,6 +86,14 @@ int main(int argc, char *argv[])
 	        perror("calloc");
 		exit(EXIT_FAILURE);
         }
+	
+	// ALLOCATE MEMORY FOR CORRESPONDING WATHCED PATHS
+	paths = calloc(MAX_WATCH, sizeof(PATH_MAX));
+	if (paths == NULL){
+		perror("calloc");
+		exit(EXIT_FAILURE);
+	}
+	
 
         for(;;) // MAIN LOOP
         {
@@ -123,17 +134,24 @@ rd_ptr=&rd;
 deserialize_request_data(request_buffer, rd_ptr);
 
 char* action = rd.action;
-char* path = rd.path;
+char path[PATH_MAX];
+strcpy(path, rd.path);
 int wd_id = rd_ptr -> wd;
 
 	if(!strcmp(action,"add")){
-
-		if( (wd[watch_count] = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){
+	if( (wd[watch_count] = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){
                         sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
 		}
 		else {
-			watch_count = wd[watch_count];
-                        sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d | wd: %d ", path, watch_count ,wd);
+			if ( ((watch_count > 0) && (wd[watch_count] != wd[watch_count-1])) || (watch_count == 0) ){
+				// strncpy(paths[watch_count], rd.path, rd.path_len);
+				// paths[watch_count] = "3abdo";
+				printf("[DEBUG]: Path added: %s \n", paths[watch_count]);
+				
+				watch_count++;
+				printf("[DEBUG]: watch_count incremented = %d \n", watch_count);
+			}
+			sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d", path, watch_count);
                      }
 	}
 
@@ -143,15 +161,17 @@ int wd_id = rd_ptr -> wd;
 		// else if client sends wd, use it directly
 		
                 if( inotify_rm_watch(fd, wd_id) == -1  ){
-                        sprintf(response_buffer, "Could not remove watch on %s : %s", path, strerror(errno));
+                        sprintf(response_buffer, "[ERROR] Could not remove watch %d : %s", wd_id, strerror(errno));
                 }
                 else {
-                        --watch_count;
-                        sprintf(response_buffer, "Watch on %s removed", path);
+                        sprintf(response_buffer, "[INFO] Watch on %s removed", paths[watch_count-1]);
+			wd[watch_count-1] = 0; // invalidate current watch-descriptor
+			paths[watch_count-1] = NULL; // invalidate path
+			watch_count--;        // decrement watch_count
                      }
 	}
 	else if (!strcmp(action,"list")){
-		sprintf(response_buffer, "Listing watches...");
+		sprintf(response_buffer, "[INFO] Listing watches...");
 	}
 }
 
