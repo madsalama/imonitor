@@ -20,7 +20,7 @@ D /opt/web/app/tomcat/ecycc8/conf/cycc/web_templates/serviceportal/deleteme.ftl
 - UNIX_SOCKET CLIENT/SERVER: [#DONE]
   - serialize/deserialize request_data
   - handle request depending on payload data -> dummy
-- inotify/track watches + handle message from client, no need to fork children per request since daemon will use long polling on watches. 
+- inotify/track watches + handle message from client, no need to fork children per request since daemon will use long polling on all watches in a loop while handling client requests!
 
 ### Challenges! 
 - daemon will get slower handling of requests if number of watches are too large or polling is too frequent, how to scale?
