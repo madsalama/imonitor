@@ -24,6 +24,8 @@ D /opt/web/app/tomcat/ecycc8/conf/cycc/web_templates/serviceportal/deleteme.ftl
 
 ### Challenges! 
 - daemon will get slower handling of requests if number of watches are too large or polling is too frequent, how to scale?
+  - when number of watches reaches a threshold, fork a new daemon to handle, ... 
+    - won't be too frequent, will scale well.
 - what type of reports needed per watch? how to separate reports per watch as well?
 - how to actually generate above report!? 
   
