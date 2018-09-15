@@ -1,0 +1,4 @@
+1- handle trailing \n when listing watch paths
+2- add implementation for handling polling inotify watches in:
+	- inotifier.h/inotifier.c
+3- handle the required report formatting.

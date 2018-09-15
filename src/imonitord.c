@@ -14,6 +14,7 @@
 #include <limits.h>
 
 #include "serialize.h"
+// #include "inotifier.h"
 
 #define PID_PATH "/var/tmp/imonitor.pid"
 #define SOCK_PATH "/tmp/imonitor.socket"
@@ -23,6 +24,10 @@
 
 void handle_connection(int);
 void handle_request(char* request_buffer, char* response_buffer);
+int lookup_wd(char path[]);
+
+void list_watches(char list[]); 
+
 void handle_child(int sig);
 void handle_args(int argc, char* argv[]);
 void kill_daemon();
@@ -32,9 +37,6 @@ void init_socket();
 
 int server_sockfd;
 int fd;
-
-// int* wd;
-// char** paths;   // paths = [ paths[0], *paths, *paths, .... ]   // paths[0] = "string1" 
 
 struct watch_table{
         int wd;
@@ -173,7 +175,7 @@ if(!strcmp(action,"add")){
 		}
 	}
 	else {
-	sprintf(response_buffer, "[ERROR] Max number of watches exceeded. Remove some watches and try again | MAX_WATCH = %d", MAX_WATCH); 
+	sprintf(response_buffer, "[ERROR] Max number of %d watches exceeded. Remove some watches and try again.", MAX_WATCH); 
 	}
 }
 
@@ -182,21 +184,31 @@ if(!strcmp(action,"add")){
 		// if client sends path, map path to corresponding wd
 		// else if client sends wd, use it directly
 		
-		// int wd = lookup_wd(path);
-		int wd = 1;
-		
-                if( inotify_rm_watch(fd, wd) == -1  ){
-                        sprintf(response_buffer, "[ERROR] Could not remove watch on %d : %s", wd, strerror(errno));
+		int wd = lookup_wd(path);
+		if (wd <= 0){
+			sprintf(response_buffer, "[ERROR] Watch on %s doesn't exist!", path);
+		}
+                else if( inotify_rm_watch(fd, wd) == -1  ){
+                        sprintf(response_buffer, "[ERROR] Could not remove watch on %d : %s ", wd, strerror(errno));
                 }
                 else {
-                        sprintf(response_buffer, "[INFO] Watch on %s removed", wtable[watch_count-1].path);
-			wtable[watch_count-1].wd = 0;    // invalidate current watch-descriptor
-			// wtable[watch_count-1].path = ""; // invalidate path (no need, it's an array)
+                        sprintf(response_buffer, "[INFO] Watch on %s removed", path);
+			// wtable[watch_count-1].wd = 0;    // invalidate current watch-descriptor
+			// wtable[watch_count-1].path = NULL; // invalidate path (no need, it's an array)
 			watch_count--;                   // decrement watch_count
                      }
 	}
-	else if (!strcmp(action,"list")){
-		sprintf(response_buffer, "[INFO] Listing watches...");
+	else if (!strcmp(action,"list") && (watch_count > 0) ){
+		char list[PATH_MAX*MAX_WATCH];
+		list_watches(list); // list now contains list
+		sprintf(response_buffer, "[INFO]: CURRENTLY WATCHING:\n%s", list);
+		
+		// emptying list to avoid strcat issues 
+		// that concats old values for some weird reason O_O'
+		memset(list, '\0', PATH_MAX*MAX_WATCH);
+	}
+	else{
+		sprintf(response_buffer,"[ERROR]: No watches exist to list!");
 	}
 }
 
@@ -318,7 +330,7 @@ void init_socket()
         unlink(local.sun_path);
         len = strlen(local.sun_path) + sizeof(local.sun_family);
 
-	chmod(local.sun_path, 0777); // enable permissons on socket file
+	// chmod(local.sun_path, 0777); // enable permissons on socket file
 
         if(bind(server_sockfd, (struct sockaddr *)&local, len) == -1)
         {
@@ -326,3 +338,31 @@ void init_socket()
                 exit(EXIT_FAILURE);
         }
 }
+
+
+// ------------------------
+//  inefficient -> O(N^2)
+// ------------------------
+int lookup_wd(char path[]){
+	int i;
+	for (i = 0; i < watch_count; i++){
+		if( !strcmp(wtable[i].path, path) ) 
+			return wtable[i].wd;	// i.e path found, wd = wtable[i].wd
+		continue;
+	}
+	return -1; // not found!
+}
+
+void list_watches(char list[]){
+	char string[PATH_MAX]; // iteration variable
+	int i;
+	for (i = 0; i < watch_count; i++){
+		sprintf(string, "- %s\n",wtable[i].path);
+		strcat(list, string);
+	
+	// TODO: Add code to remove trailing \n for final path
+
+	}
+}
+// -----------------------
+
