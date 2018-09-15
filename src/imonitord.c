@@ -11,27 +11,33 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 #include <poll.h>
+#include <limits.h>
 
-#include "mmap_file.h"
+#include "serialize.h"
 
 #define PID_PATH "/var/tmp/imonitor.pid"
 #define SOCK_PATH "/tmp/imonitor.socket"
 #define LOG_PATH "/var/log/imonitord.log"
 
-void fork_handler(char* action, char* path);
+#define MAX_WATCH 100 // should be configurable
+
 void handle_connection(int);
+void handle_request(char* request_buffer, char* response_buffer);
 void handle_child(int sig);
-void handle_args(int argc, char *argv[]);
+void handle_args(int argc, char* argv[]);
 void kill_daemon();
 void daemonize();
 void stop_server();
 void init_socket();
 
 int server_sockfd;
+int fd;
+int *wd;
+int watch_count;
 
 /* imonitord: unix domain server daemon
- * init();	 
- * a. listens for imonitor requests on /var/run/monitor.socket 
+ * init();
+ * a. listens for imonitor requests on /var/run/monitor.socket
  * b. creates an inotify instance to serve upcoming watch requests dynamically
 
  * handle();
@@ -42,14 +48,14 @@ int server_sockfd;
 int main(int argc, char *argv[])
 {
         int client_sockfd;
-        int fd;
-        // i, poll_num;
+	watch_count = 0;
+
         struct sockaddr_un remote;
         int t;
 
         if(argc > 1) {handle_args(argc, argv);}
 
-        signal(SIGCHLD, handle_child);
+        signal(SIGCHLD, handle_child);  // A CHILD RECEIVED A SIG, WHAT SHOULD PARENT DO?
         signal(SIGTERM, stop_server);
 
         init_socket();
@@ -57,7 +63,7 @@ int main(int argc, char *argv[])
         if(listen(server_sockfd, 5) == -1)
         {
                 perror("listen");
-                exit(1);
+                exit(EXIT_FAILURE);
         }
 
         printf("Listening...\n");
@@ -71,6 +77,13 @@ int main(int argc, char *argv[])
               exit(EXIT_FAILURE);
         }
 
+	// WD
+	wd = calloc(MAX_WATCH, sizeof(int));
+        if (wd == NULL) {
+	        perror("calloc");
+		exit(EXIT_FAILURE);
+        }
+
         for(;;) //This might take a while...
         {
                 printf("Waiting for a connection\n");
@@ -79,88 +92,86 @@ int main(int argc, char *argv[])
                 if((client_sockfd = accept(server_sockfd, (struct sockaddr *)&remote, &t)) == -1)
                 {
                         perror("accept");
-                        exit(1);
+                        exit(EXIT_FAILURE);
                 }
 
                 printf("Accepted connection\n");
                 fflush(stdout);
                 
-		// fork_handler(client_sockfd); 
 		handle_connection(client_sockfd);
-
         }
 }
 
-void fork_handler(char* action, char* path)
-{
-        int status;
-	pid_t pid;
+/*
+char *output request_substring(char* input){
 
-        switch(pid = fork())
-        {
-                case -1:
-                        perror("Error forking connection handler");
-                        break;
-                case 0:
-                        // handle_inotify(); = create watch, make child listening on inotify events
-                    
-                        while(1){}  // dummy
-                        exit(0);
-                default:
-                        break;
-        }
+}
+*/
+
+void handle_request(char* request_buffer, char* response_buffer){
+
+// request format: 'action path wd\0'   // no spaces in the buffer, added for readablity
+// client is responsible to send correct format (error check at client)
+
+// deserialize request_buffer
+
+struct request_data rd, *rd_ptr;
+rd_ptr=&rd;
+
+deserialize_request_data(request_buffer, rd_ptr);
+
+char* action = rd.action;
+char* path = rd.path;
+int wd_id = rd.wd;
+
+	if(!strcmp(action,"add")){
+
+		if( (wd[watch_count] = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){
+                        sprintf(response_buffer, "Could not add watch on %s : %s", path, strerror(errno));
+		}
+		else {
+			++watch_count;
+                        sprintf(response_buffer, "[INFO] Watch added on %s", path);
+                     }
+	}
+
+	else if (!strcmp(action,"remove")){
+
+                if( inotify_rm_watch(fd, wd_id) == -1  ){
+                        sprintf(response_buffer, "Could not remove watch on %s : %s", path, strerror(errno));
+                }
+                else {
+                        --watch_count;
+                        sprintf(response_buffer, "Watch on %s removed", path);
+                     }
+	}
+	else if (!strcmp(action,"list")){
+		sprintf(response_buffer, "Listing watches...\n");
+	}
 }
 
 void handle_connection(int client_sockfd)
 {
-        char buff[1024];
+        unsigned char request_buffer[PATH_MAX]; 
+	unsigned char response_buffer[PATH_MAX];
         unsigned int len;
-
-	const char *list_str = "list";
-	const char *add_str = "add";
-	const char *remove_str = "remove";
-
 	printf("Handling connection\n");
         fflush(stdout);
-
-        while(len = recv(client_sockfd, &buff, 1024, 0), len > 0)
-	{
-		buff[len]='\0'; 
-		// *(buff+len)='\0'; // null-terminate buffer contents
-
-		// NOTE: IF NOT HANDLED, CLIENT BLOCKS (DAEMON WAITS)
-
-		if (!strcmp(buff,list_str)){
-			// Probably won't need a fork to 'list' watch descriptors/paths
-			send(client_sockfd, "list handled!", 100, 0);	
-		}
-
-	       /*
-               buff = "add:[PATH]"
-               ACTION = "add"
-               PATH = "/opt/web/tomcat"
-	       */
-
-		else { 
-
-			fork_handler("add","/var/log");
-			send(client_sockfd, &buff, 100, 0);
-		}
-
-		// else
-		// buff=add:[PATH]
-		// EXTRACT ACTION/PATH:
-			// ACTION = add
-			// PATH = PATH
+	
+									     // ^ handle potential buffer overflow
+        while(len = recv(client_sockfd, &request_buffer, PATH_MAX , 0), (len > 0 && len < PATH_MAX) ){
 		
-		// $ACTION watch for $PATH
+		// note: request_buffer should contain a serialized request_data struct 
+		request_buffer[len] = '\0';
+		handle_request( (char*)request_buffer, (char*)response_buffer);   // calls deserialize and handles request
 
+		// after handle_request is returned, response buffer is set and ready to be sent back to client
+		send(client_sockfd, &response_buffer, PATH_MAX, 0);
 	}
 
         close(client_sockfd);
         printf("Done handling\n");
         fflush(stdout);
-        // exit(0);
 }
 
 void handle_child(int sig)
@@ -191,12 +202,14 @@ void kill_daemon()
                 fscanf(pidfile, "%d", &pid);
                 printf("Killing PID %d\n", pid);
                 kill(pid, SIGTERM); //kill it gently
+	        close(fd);
+        	free(wd);
         }
         else
         {
                 printf("un_server not running\n"); //or you have bigger problems
         }
-        exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 void daemonize()
@@ -217,14 +230,14 @@ void daemonize()
                         break;
                 case -1:
                         perror("Failed to fork daemon\n");
-                        exit(1);
+                        exit(EXIT_FAILURE);
                 default:
                         //write pidfile & you can go home!
                         pidfile = fopen(PID_PATH, "w");
                         fprintf(pidfile, "%d", pid);
                         fflush(stdout);
                         fclose(pidfile);
-                        exit(0);
+                        exit(EXIT_SUCCESS);
         }
 }
 
@@ -233,7 +246,10 @@ void stop_server()
         unlink(PID_PATH);  //Get rid of pesky pidfile, socket
         unlink(SOCK_PATH);
         kill(0, SIGKILL);  //Infanticide :(
-        exit(0);
+        
+	close(fd);
+        free(wd);
+        exit(EXIT_SUCCESS);
 }
 
 void init_socket()
@@ -244,7 +260,7 @@ void init_socket()
         if((server_sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
         {
                 perror("Error creating server socket");
-                exit(1);
+                exit(EXIT_FAILURE);
         }
 
         local.sun_family = AF_UNIX;
@@ -257,6 +273,6 @@ void init_socket()
         if(bind(server_sockfd, (struct sockaddr *)&local, len) == -1)
         {
                 perror("binding");
-                exit(1);
+                exit(EXIT_FAILURE);
         }
 }
