@@ -17,7 +17,7 @@
 
 #define PID_PATH "/var/tmp/imonitor.pid"
 #define SOCK_PATH "/tmp/imonitor.socket"
-#define LOG_PATH "/var/log/imonitord.log"
+#define LOG_PATH "/var/tmp/imonitord.log"
 
 #define MAX_WATCH 100 // should be configurable
 
@@ -132,8 +132,8 @@ int wd_id = rd_ptr -> wd;
                         sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
 		}
 		else {
-			watch_count++;
-                        sprintf(response_buffer, "[INFO] Watch added on %s | request_buffer_wd: %d ", path, wd_id );
+			watch_count = wd[watch_count];
+                        sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d | wd: %d ", path, watch_count ,wd);
                      }
 	}
 
