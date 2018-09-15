@@ -24,11 +24,12 @@
 
 void handle_connection(int);
 void handle_request(char* request_buffer, char* response_buffer);
-int lookup_wd(char path[]);
 
+int lookup_wd(char path[]);
 void list_watches(char list[]); 
 
 void handle_child(int sig);
+
 void handle_args(int argc, char* argv[]);
 void kill_daemon();
 void daemonize();
@@ -38,12 +39,12 @@ void init_socket();
 int server_sockfd;
 int fd;
 
-struct watch_table{
+struct watch_data{
         int wd;
         char path[PATH_MAX];
 };
 
-struct watch_table* wtable ;
+struct watch_data* wtable ;
 int watch_count;
 
 /* imonitord: unix domain server daemon
@@ -105,7 +106,7 @@ int main(int argc, char *argv[])
 */
 
 	// more elegant way of creating a key/value table
-	wtable = calloc( MAX_WATCH, sizeof(struct watch_table) );
+	wtable = calloc( MAX_WATCH, sizeof(struct watch_data) );
 	if (wtable == NULL){
 	        perror("calloc");
         	exit(EXIT_FAILURE);
