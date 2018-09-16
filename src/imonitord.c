@@ -20,7 +20,7 @@
 #define SOCK_PATH "/tmp/imonitor.socket"
 #define LOG_PATH "/var/tmp/imonitord.log"
 
-#define MAX_WATCH 2
+#define MAX_WATCH 100 // bug: can't increase beyond 2040
 
 void handle_connection(int);
 void handle_request(char* request_buffer, char* response_buffer);
@@ -39,9 +39,10 @@ void init_socket();
 int server_sockfd;
 int fd;
 
+// ~ 5KB/WATCH
 struct watch_data{
         int wd;
-        char path[PATH_MAX];
+        char path[PATH_MAX]; // issue/bug: stack allocated while wtable on heap?
 };
 
 struct watch_data* wtable ;
@@ -163,21 +164,24 @@ if(!strcmp(action,"add")){
 	int wd;
 	
 	// LOOKUP IFF MAX_WATCH NOT EXCEEDED
-	if (watch_count+1 < MAX_WATCH){
-		wd = lookup_wd(path);
+	if ( watch_count < MAX_WATCH ){
+		wd = lookup_wd(path); 
 	}
 	else {
 		sprintf(response_buffer, "[ERROR] Max number of %d watches exceeded. Remove some watches and try again.", MAX_WATCH);
+		return;
 	}
-
+	// --------
+	
 	// ATTEMPT TO ADD WATCH
-	if (wd>0){ // FAIL
+	if (wd > 0){ // FAIL
 		sprintf(response_buffer,"[ERROR] Watch on %s already exists!", path);
 	} // FAIL
-	else if( (wtable[watch_count].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){ 
+	else if((wtable[watch_count].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){ 
 		sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
 	}
-	else { // SUCCESS
+	else
+	{ // SUCCESS
 		strcpy(wtable[watch_count].path, path); // printf("[DEBUG]: Path added: %s \n", wtable[watch_count].path);
 		watch_count++; // printf("[DEBUG]: watch_count incremented = %d \n", watch_count);
 		sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d", path, watch_count);
@@ -352,10 +356,10 @@ int lookup_wd(char path[]){
 	int i;
 	for (i = 0; i < watch_count; i++){
 		if( !strcmp(wtable[i].path, path) ) 
-			return wtable[i].wd;	// i.e path found, wd = wtable[i].wd
+			return wtable[i].wd;	
 		continue;
 	}
-	return -1; // not found!
+	return -1;
 }
 
 void list_watches(char list[]){
@@ -365,7 +369,7 @@ void list_watches(char list[]){
 		sprintf(string, "- %s\n",wtable[i].path);
 		strcat(list, string);
 	
-	// TODO: Add code to remove trailing \n for final path
+	// improve: add code to remove trailing \n for final path
 
 	}
 }
