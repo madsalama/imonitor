@@ -1,5 +1,5 @@
 #!/bin/bash
 gcc serialize.c imonitor.c -o imonitor
-echo "Check daemon logs at: /var/tmp/imonitord.log"
+echo "Check valgrind logs at: debug.log"
 ./imonitor add /var/log
 ./imonitor list

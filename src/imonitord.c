@@ -19,13 +19,14 @@
 #define SOCK_PATH "/tmp/imonitor.socket"
 #define LOG_PATH "/var/tmp/imonitord.log"
 
-#define MAX_WATCH 100 // bug: can't increase beyond 2040
+#define MAX_WATCH 3000 // bug: can't increase beyond 2040 = FIXED!
 
 void handle_connection(int);
 void handle_request(char* request_buffer, char* response_buffer);
 
 int lookup_wd(char path[]);
 void list_watches(char list[]); 
+char* watch_list;
 
 void handle_child(int sig);
 
@@ -41,7 +42,8 @@ int fd;
 // ~ 5KB/WATCH
 struct watch_data{
         int wd;
-        char path[PATH_MAX]; // issue/bug: stack allocated while wtable on heap?
+	char* path;
+        // char path[PATH_MAX]; // issue/bug: stack allocated while wtable on heap?
 };
 
 struct watch_data* wtable ;
@@ -111,6 +113,8 @@ int main(int argc, char *argv[])
 	        perror("calloc");
         	exit(EXIT_FAILURE);
 	}
+	
+	watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );
 
         for(;;) // MAIN LOOP
         {
@@ -153,13 +157,13 @@ deserialize_request_data(request_buffer, rd_ptr);
 char action[10];
 strcpy(action, rd.action);
 
-char path[PATH_MAX];
+int path_len = rd_ptr -> path_len;
+
+char path[path_len];
 strcpy(path, rd.path);
 
-// int wd_id = rd_ptr -> wd;
-
 if(!strcmp(action,"add")){
-	
+
 	int wd;
 	
 	// LOOKUP IFF MAX_WATCH NOT EXCEEDED
@@ -180,8 +184,9 @@ if(!strcmp(action,"add")){
 		sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
 	}
 	else
-	{ // SUCCESS
-		strcpy(wtable[watch_count].path, path); // printf("[DEBUG]: Path added: %s \n", wtable[watch_count].path);
+	{ // SUCCESS 
+		wtable[watch_count].path = calloc(path_len, sizeof(char)); 
+		strcpy(wtable[watch_count].path, path); printf("[DEBUG]: Path added: %s \n", wtable[watch_count].path);
 		watch_count++; // printf("[DEBUG]: watch_count incremented = %d \n", watch_count);
 		sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d", path, watch_count);
 	}
@@ -207,13 +212,12 @@ if(!strcmp(action,"add")){
                      }
 	}
 	else if (!strcmp(action,"list") && (watch_count > 0) ){
-		char list[PATH_MAX*MAX_WATCH];
-		list_watches(list); // list now contains list
-		sprintf(response_buffer, "[INFO]: CURRENTLY WATCHING:\n%s", list);
+		list_watches(watch_list); // list now contains list
+		sprintf(response_buffer, "[INFO]: CURRENTLY WATCHING:\n%s", watch_list);
 		
 		// emptying list to avoid strcat issues 
 		// that concats old values for some weird reason O_O'
-		memset(list, '\0', PATH_MAX*MAX_WATCH);
+		memset(watch_list, '\0', PATH_MAX * MAX_WATCH);
 	}
 	else{
 		sprintf(response_buffer,"[ERROR]: No watches exist to list!");
