@@ -12,5 +12,5 @@ fi
 message=$1
 branch=$2
 
-git commit -a -m '$message'
-git push origin $branch 
+git commit -a -m "$message"
+git push origin "$branch"
