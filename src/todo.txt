@@ -1,5 +1,4 @@
 -1- handle trailing '\n' char when listing watch paths
-
 -2- cache watch_list; if watch_list not changed;
 respond with cached result instead of going through the whole list again. (expensive strcat!)
 
@@ -15,6 +14,5 @@ struct watch_data{
 struct watch_data* wtable; // MAX_WATCH structs calloced
 
 -4- implementation for handling polling inotify watches.
-
 -5- implementation to handle the required report formatting according to watch events.
 
