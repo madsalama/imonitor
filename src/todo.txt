@@ -1,4 +1,4 @@
-[MERGE WITH MAIN WHEN THIS LIST IS DONE]
+[MERGE WITH MAIN WHEN THIS LIST IS ALL #DONE]
 
 -1- handle trailing '\n' char when listing watch paths
 
