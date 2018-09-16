@@ -14,7 +14,6 @@
 #include <limits.h>
 
 #include "serialize.h"
-// #include "inotifier.h"
 
 #define PID_PATH "/var/tmp/imonitor.pid"
 #define SOCK_PATH "/tmp/imonitor.socket"
