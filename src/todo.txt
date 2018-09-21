@@ -1,6 +1,27 @@
+[MERGE WITH MAIN WHEN THIS LIST IS DONE]
+
 -1- handle trailing '\n' char when listing watch paths
+
+[NOW POSSIBLE SINCE LIST IS MALLOC'D]
 -2- cache watch_list; if watch_list not changed;
 respond with cached result instead of going through the whole list again. (expensive strcat!)
 
--3- implementation for handling polling inotify watches.
--4- implementation to handle the required report formatting according to watch events.
+[DONE]
+-3- handle issue when MAX_WATCH is large(tried +4000), server crashes...
+could be related to...
+
+[THIS WAS ANOTHER ISSUE LOL]
+// ~ 5KB/WATCH
+struct watch_data{
+        int wd;
+        char path[PATH_MAX]; // stack allocated while wtable is on heap?
+};
+
+struct watch_data* wtable; // MAX_WATCH structs calloced
+
+[TODO]
+-4- implementation for handling polling inotify watches.
+
+[TODO]
+-5- implementation to handle the required report formatting according to watch events.
+

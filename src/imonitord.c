@@ -14,19 +14,19 @@
 #include <limits.h>
 
 #include "serialize.h"
-// #include "inotifier.h"
 
 #define PID_PATH "/var/tmp/imonitor.pid"
 #define SOCK_PATH "/tmp/imonitor.socket"
 #define LOG_PATH "/var/tmp/imonitord.log"
 
-#define MAX_WATCH 1024
+#define MAX_WATCH 3000 // bug: can't increase beyond 2040 = FIXED!
 
 void handle_connection(int);
 void handle_request(char* request_buffer, char* response_buffer);
 
 int lookup_wd(char path[]);
 void list_watches(char list[]); 
+char* watch_list;
 
 void handle_child(int sig);
 
@@ -39,9 +39,11 @@ void init_socket();
 int server_sockfd;
 int fd;
 
+// ~ 5KB/WATCH
 struct watch_data{
         int wd;
-        char path[PATH_MAX];
+	char* path;
+        // char path[PATH_MAX]; // issue/bug: stack allocated while wtable on heap?
 };
 
 struct watch_data* wtable ;
@@ -111,6 +113,8 @@ int main(int argc, char *argv[])
 	        perror("calloc");
         	exit(EXIT_FAILURE);
 	}
+	
+	watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );
 
         for(;;) // MAIN LOOP
         {
@@ -153,30 +157,38 @@ deserialize_request_data(request_buffer, rd_ptr);
 char action[10];
 strcpy(action, rd.action);
 
-char path[PATH_MAX];
-strcpy(path, rd.path);
+int path_len = rd_ptr -> path_len;
 
-// int wd_id = rd_ptr -> wd;
+char path[path_len];
+strcpy(path, rd.path);
 
 if(!strcmp(action,"add")){
 
-	if( (wtable[watch_count].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){
-		sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));}
-
-	// MAX_WATCH not exceeded
-	else if (watch_count < MAX_WATCH) {
-		// WATCH is not already added
-		if ( ((watch_count > 0) && (wtable[watch_count].wd != wtable[watch_count-1].wd)) || (watch_count == 0) ){
-			strcpy(wtable[watch_count].path, path); // printf("[DEBUG]: Path added: %s \n", wtable[watch_count].path);
-			watch_count++; // printf("[DEBUG]: watch_count incremented = %d \n", watch_count);
-			sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d", path, watch_count);
-		}
-		else {
-			sprintf(response_buffer, "[WARN] Watch already added on %s | watch_count: %d", path, watch_count);
-		}
+	int wd;
+	
+	// LOOKUP IFF MAX_WATCH NOT EXCEEDED
+	if ( watch_count < MAX_WATCH ){
+		wd = lookup_wd(path); 
 	}
 	else {
-	sprintf(response_buffer, "[ERROR] Max number of %d watches exceeded. Remove some watches and try again.", MAX_WATCH); 
+		sprintf(response_buffer, "[ERROR] Max number of %d watches exceeded. Remove some watches and try again.", MAX_WATCH);
+		return;
+	}
+	// --------
+	
+	// ATTEMPT TO ADD WATCH
+	if (wd > 0){ // FAIL
+		sprintf(response_buffer,"[ERROR] Watch on %s already exists!", path);
+	} // FAIL
+	else if((wtable[watch_count].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){ 
+		sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
+	}
+	else
+	{ // SUCCESS 
+		wtable[watch_count].path = calloc(path_len, sizeof(char)); 
+		strcpy(wtable[watch_count].path, path); printf("[DEBUG]: Path added: %s \n", wtable[watch_count].path);
+		watch_count++; // printf("[DEBUG]: watch_count incremented = %d \n", watch_count);
+		sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d", path, watch_count);
 	}
 }
 
@@ -200,13 +212,12 @@ if(!strcmp(action,"add")){
                      }
 	}
 	else if (!strcmp(action,"list") && (watch_count > 0) ){
-		char list[PATH_MAX*MAX_WATCH];
-		list_watches(list); // list now contains list
-		sprintf(response_buffer, "[INFO]: CURRENTLY WATCHING:\n%s", list);
+		list_watches(watch_list); // list now contains list
+		sprintf(response_buffer, "[INFO]: CURRENTLY WATCHING:\n%s", watch_list);
 		
 		// emptying list to avoid strcat issues 
 		// that concats old values for some weird reason O_O'
-		memset(list, '\0', PATH_MAX*MAX_WATCH);
+		memset(watch_list, '\0', PATH_MAX * MAX_WATCH);
 	}
 	else{
 		sprintf(response_buffer,"[ERROR]: No watches exist to list!");
@@ -348,10 +359,10 @@ int lookup_wd(char path[]){
 	int i;
 	for (i = 0; i < watch_count; i++){
 		if( !strcmp(wtable[i].path, path) ) 
-			return wtable[i].wd;	// i.e path found, wd = wtable[i].wd
+			return wtable[i].wd;	
 		continue;
 	}
-	return -1; // not found!
+	return -1;
 }
 
 void list_watches(char list[]){
@@ -361,7 +372,7 @@ void list_watches(char list[]){
 		sprintf(string, "- %s\n",wtable[i].path);
 		strcat(list, string);
 	
-	// TODO: Add code to remove trailing \n for final path
+	// improve: add code to remove trailing \n for final path
 
 	}
 }
