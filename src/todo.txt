@@ -6,18 +6,9 @@
 -2- cache watch_list; if watch_list not changed;
 respond with cached result instead of going through the whole list again. (expensive strcat!)
 
-[DONE]
--3- handle issue when MAX_WATCH is large(tried +4000), server crashes...
-could be related to...
 
-[THIS WAS ANOTHER ISSUE LOL]
-// ~ 5KB/WATCH
-struct watch_data{
-        int wd;
-        char path[PATH_MAX]; // stack allocated while wtable is on heap?
-};
-
-struct watch_data* wtable; // MAX_WATCH structs calloced
+-3- remove WD from serialized/deserialized request and request_data structs
+since by design now, only paths are allowed for add/remove
 
 [TODO]
 -4- implementation for handling polling inotify watches.
@@ -25,3 +16,15 @@ struct watch_data* wtable; // MAX_WATCH structs calloced
 [TODO]
 -5- implementation to handle the required report formatting according to watch events.
 
+[DONE]
+-- handle issue when MAX_WATCH is large(tried +4000), server crashes...
+could be related to...
+
+[BELOW WAS GONNA BE ANOTHER ISSUE LOL]
+// ~ 5KB/WATCH
+struct watch_data{
+        int wd;
+        char path[PATH_MAX]; // stack allocated while wtable is on heap?
+};
+
+struct watch_data* wtable; // MAX_WATCH structs calloced
