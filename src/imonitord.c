@@ -207,7 +207,7 @@ else {
 	}
 	else
 	{ // SUCCESS! 
-		wtable[index].path = calloc(path_len, sizeof(char));
+		wtable[index].path = calloc(path_len + 1, sizeof(char));  // add one byte for '\0'
 		strncpy(wtable[index].path, path, path_len); 
 		watch_count++;
 		sprintf(response_buffer, "[INFO] Watch added on %s | index: %d", path, index);
@@ -268,7 +268,7 @@ void handle_connection(int client_sockfd)
 		handle_request( (char*)request_buffer, (char*)response_buffer);   // calls deserialize and handles request
 
 		// after handle_request is returned, response buffer is set and ready to be sent back to client
-		send(client_sockfd, &response_buffer, PATH_MAX, 0);
+		send(client_sockfd, &response_buffer, strlen(response_buffer), 0);
 	}
 
         close(client_sockfd);
@@ -415,7 +415,7 @@ int lookup_adding_index(){
 }
 
 void list_watches(char list[]){
-	char string[PATH_MAX]; // iteration variable
+	// char string[PATH_MAX]; // iteration variable
 	int count = 0;
 	int i;
 
@@ -423,6 +423,7 @@ void list_watches(char list[]){
 		if ( wtable[i].path == NULL )
 			continue;
 		else {
+			char string[ strlen(wtable[i].path) ]; 
 			sprintf(string, "- %s\n", wtable[i].path);
 			strcat(list, string);
 			count++; // found one!
