@@ -1,2 +1,2 @@
 # imonitor
-Dynamic inotify monitoring daemon
+👁️ Dynamic inotify monitoring daemon
