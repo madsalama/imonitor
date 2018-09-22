@@ -31,12 +31,15 @@ void handle_request(char* request_buffer, char* response_buffer);
 int lookup_wd(char path[], int* index);
 
 // search for appropriate location to add new watch_data
-// either in an "removed data" location [path->NULL] or at the end of the queue (where: local count < watch_count)
+// either in a "removed data" location [path -> NULL] or at the end of the queue (where: local count < watch_count)
 int lookup_adding_index();
 
+// recreate watch_list string by going through wtable element by element O(N)
+// expensive strcat is involved, so this needs to be cached.
 void list_watches(char list[]); 
 char* watch_list;
 
+// handle forked child (tbd)
 void handle_child(int sig);
 
 void handle_args(int argc, char* argv[]);
@@ -48,11 +51,10 @@ void init_socket();
 int server_sockfd;
 int fd;
 
-// ~ 5KB/WATCH
+// struct for handling watch data table | around 5KB/WATCH (MAX)
 struct watch_data{
         int wd;
 	char* path;
-        // char path[PATH_MAX]; // issue/bug: stack allocated while wtable on heap?
 };
 
 struct watch_data* wtable ;
@@ -116,14 +118,14 @@ int main(int argc, char *argv[])
 	}
 */
 
-	// more elegant way of creating a key/value table
+	// more elegant and efficient way of creating a key/value table
 	wtable = calloc( MAX_WATCH, sizeof(struct watch_data) );
 	if (wtable == NULL){
 	        perror("calloc");
         	exit(EXIT_FAILURE);
 	}
 	
-	watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );
+	watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );   // 2048 WATCH * 4096 B = 1MB
 
         for(;;) // MAIN LOOP
         {
@@ -230,7 +232,7 @@ else {
                         sprintf(response_buffer, "[ERROR] Could not remove watch on %d : %s ", wd, strerror(errno));
                 }
                 else {	
-			sprintf(response_buffer, "[INFO] Watch on %s removed on index %d", path, index);
+			sprintf(response_buffer, "[INFO] Watch removed on %s | index: %d", path, index);
 			memset(wtable[index].path,0, path_len + 1);  // clear memory
 			free(wtable[index].path);                    // free memory
 			wtable[index].path = NULL;                   // nullify pointer
@@ -244,7 +246,7 @@ else {
 
 		memset(watch_list, 0, strlen(watch_list));
 		list_watches(watch_list);
-		sprintf(response_buffer, "[INFO]: CURRENTLY WATCHING:\n%s", watch_list);
+		sprintf(response_buffer, "[INFO] Watching ...\n%s", watch_list);
 		
 	}
 	else{
@@ -424,12 +426,13 @@ void list_watches(char list[]){
 			continue;
 		else {
 			char string[ strlen(wtable[i].path) ]; 
-			sprintf(string, "- %s\n", wtable[i].path);
+			sprintf(string, "\t👁️ %s\n", wtable[i].path);
 			strcat(list, string);
 			count++; // found one!
 		}
 
 	// improve: add code to remove trailing \n for final path
+	
 	}
 }
 // -----------------------
