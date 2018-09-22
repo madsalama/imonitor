@@ -1,4 +1,21 @@
+
 NOTE: [MERGE WITH MAIN WHEN THIS LIST IS ALL #DONE]
+
+--------
+ BUG #1
+--------
+./imonitor add /var/log
+./imonitor add /var
+./imonitor list
+<shows_list_ok>
+
+./imonitor remove /var/log
+
+./imonitor list
+- /var/log 	# WRONG!
+
+./imonitor remove /var/log
+imonitord: [ERROR] Could not remove watch on 1 : Invalid argument
 
 --------
  [TODO]

@@ -26,7 +26,14 @@
 void handle_connection(int);
 void handle_request(char* request_buffer, char* response_buffer);
 
-int lookup_wd(char path[]);
+// search for given path in wtable
+// if found: return wd and index (where path is found)
+int lookup_wd(char path[], int* index);
+
+// search for appropriate location to add new watch_data
+// either in an "removed data" location [path->NULL] or at the end of the queue (where: index < watch_count)
+int lookup_adding_index();
+
 void list_watches(char list[]); 
 char* watch_list;
 
@@ -167,10 +174,11 @@ strcpy(path, rd.path);
 if(!strcmp(action,"add")){
 
 	int wd;
+	int index;
 	
 	// LOOKUP IFF MAX_WATCH NOT EXCEEDED
 	if ( watch_count < MAX_WATCH ){
-		wd = lookup_wd(path); 
+		wd = lookup_wd(path, &index); 
 	}
 	else {
 		sprintf(response_buffer, "[ERROR] Max number of %d watches exceeded.\
@@ -183,42 +191,54 @@ Remove some watches and try again.", MAX_WATCH);
 	if (wd > 0){ // FAIL
 		sprintf(response_buffer,"[ERROR] Watch on %s already exists!", path);
 	} // FAIL
-	else if((wtable[watch_count].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){ 
+
+else {
+	int index = lookup_adding_index();
+	
+	if((wtable[index].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){ 
 		sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
 	}
 	else
-	{ // SUCCESS 
-		wtable[watch_count].path = calloc(path_len, sizeof(char)); 
-		strcpy(wtable[watch_count].path, path); // printf("[DEBUG]: Path added: %s \n", wtable[watch_count].path);
-		watch_count++; // printf("[DEBUG]: watch_count incremented = %d \n", watch_count);
-		sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d", path, watch_count);
+	{ // SUCCESS! 
+		wtable[index].path = calloc(path_len, sizeof(char)); 
+		strncpy(wtable[index].path, path, path_len); 
+		watch_count++;
+		sprintf(response_buffer, "[INFO] Watch added on %s | index: %d", path, index);
 	}
+     }
+
+
 }
 
 	else if (!strcmp(action,"remove")){
 
 		// client sends path, map path to corresponding wd
-		int wd = lookup_wd(path);
+		int index;
+		int wd = lookup_wd(path, &index);
 
-		if (wd <= 0){
+		if (wd < 0){
 			sprintf(response_buffer, "[ERROR] Watch on %s doesn't exist!", path);
 		}
                 else if( inotify_rm_watch(fd, wd) == -1  ){
                         sprintf(response_buffer, "[ERROR] Could not remove watch on %d : %s ", wd, strerror(errno));
                 }
-                else {
-			free(wtable[watch_count].path); 
-			watch_count--;                   
-			sprintf(response_buffer, "[INFO] Watch on %s removed", path);
+                else {	
+			sprintf(response_buffer, "[INFO] Watch on %s removed on index %d", path, index);
+			memset(wtable[index].path,0, path_len);      // clear memory
+			free(wtable[index].path);                    // free memory
+			wtable[index].path = NULL;                   // nullify pointer
+			watch_count--;
                      }
 	}
 	else if (!strcmp(action,"list") && (watch_count > 0) ){
-		list_watches(watch_list); // list now contains list
+                
+		// emptying list to avoid strcat issues
+                // that concats old values for some weird reason O_O'
+
+		memset(watch_list, 0, strlen(watch_list));
+		list_watches(watch_list);
 		sprintf(response_buffer, "[INFO]: CURRENTLY WATCHING:\n%s", watch_list);
 		
-		// emptying list to avoid strcat issues 
-		// that concats old values for some weird reason O_O'
-		memset(watch_list, '\0', PATH_MAX * MAX_WATCH);
 	}
 	else{
 		sprintf(response_buffer,"[ERROR]: No watches exist to list!");
@@ -318,9 +338,9 @@ void daemonize()
 
 void stop_server()
 {
-        unlink(PID_PATH);  //Get rid of pesky pidfile, socket
+        unlink(PID_PATH);  // remove pidfile and socket
         unlink(SOCK_PATH);
-        kill(0, SIGKILL);  //Infanticide :(
+        kill(0, SIGKILL);  // kill process children
         
 	close(fd);
         free(wtable);
@@ -356,25 +376,43 @@ void init_socket()
 // ----------------------------
 //  improve: algorithm -> O(N)
 // ----------------------------
-int lookup_wd(char path[]){
+int lookup_wd(char path[], int* index){
 	int i;
 	for (i = 0; i < watch_count; i++){
-		if( !strcmp(wtable[i].path, path) ) 
-			return wtable[i].wd;	
-		continue;
-	}
+		if ( wtable[i].path != NULL ){
+	                if( !strcmp(wtable[i].path, path) ){
+                        	*index = i;
+	                        return wtable[i].wd;
+                	}
+		}
+	}	
 	return -1;
+}
+
+int lookup_adding_index(){
+	int index = 0;
+	for (index = 0; index < watch_count; index++){
+		if ( wtable[index].path == NULL )
+			return index;
+	}
+	return index;
 }
 
 void list_watches(char list[]){
 	char string[PATH_MAX]; // iteration variable
+	int count = 0;
 	int i;
-	for (i = 0; i < watch_count; i++){
-		sprintf(string, "- %s\n",wtable[i].path);
-		strcat(list, string);
-	
-	// improve: add code to remove trailing \n for final path
 
+	for (i = 0; count < watch_count; i++){
+		if ( wtable[i].path == NULL )
+			continue;
+		else {
+			sprintf(string, "- %s\n", wtable[i].path);
+			strcat(list, string);
+			count++; // found one!
+		}
+
+	// improve: add code to remove trailing \n for final path
 	}
 }
 // -----------------------
