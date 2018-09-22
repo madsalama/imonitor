@@ -380,17 +380,23 @@ void init_socket()
 }
 
 
-// -----------------------------------------------
+// ---------------------------------------------------
 //  improve: algorithm -> O(N) on each operation
-// -----------------------------------------------
+//  N = up to watch_count instead of the whole table
+// ---------------------------------------------------
 int lookup_wd(char path[], int* index){
 	int i;
-	for (i = 0; i < watch_count; i++){
-		if ( wtable[i].path != NULL ){
-	                if( !strcmp(wtable[i].path, path) ){
-                        	*index = i;
-	                        return wtable[i].wd;
-                	}
+	int count = 0 ;
+	for (i = 0; count < watch_count; i++){
+		if ( wtable[i].path == NULL )
+			continue;
+		else {
+			if( !strcmp(wtable[i].path, path) ){
+				*index = i;
+				return wtable[i].wd;
+                    	}
+
+			count++; // found one	
 		}
 	}	
 	return -1;
