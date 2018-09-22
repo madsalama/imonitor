@@ -171,6 +171,13 @@ int path_len = rd_ptr -> path_len;
 char path[path_len];
 strcpy(path, rd.path);
 
+// WORST_ADD => O(2N): 
+// lookup_wd -> O(N)
+// lookup_adding_index -> O(N)
+
+// N << WATCH_COUNT | LINEAR PERFORMANCE
+// AVERAGE_ADD => O(2*WATCH_COUNT)
+
 if(!strcmp(action,"add")){
 
 	int wd;
@@ -373,9 +380,9 @@ void init_socket()
 }
 
 
-// ----------------------------
-//  improve: algorithm -> O(N)
-// ----------------------------
+// -----------------------------------------------
+//  improve: algorithm -> O(N) on each operation
+// -----------------------------------------------
 int lookup_wd(char path[], int* index){
 	int i;
 	for (i = 0; i < watch_count; i++){
