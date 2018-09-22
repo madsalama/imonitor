@@ -31,7 +31,7 @@ void handle_request(char* request_buffer, char* response_buffer);
 int lookup_wd(char path[], int* index);
 
 // search for appropriate location to add new watch_data
-// either in an "removed data" location [path->NULL] or at the end of the queue (where: index < watch_count)
+// either in an "removed data" location [path->NULL] or at the end of the queue (where: local count < watch_count)
 int lookup_adding_index();
 
 void list_watches(char list[]); 
@@ -200,7 +200,7 @@ else {
 	}
 	else
 	{ // SUCCESS! 
-		wtable[index].path = calloc(path_len, sizeof(char)); 
+		wtable[index].path = calloc(path_len, sizeof(char));
 		strncpy(wtable[index].path, path, path_len); 
 		watch_count++;
 		sprintf(response_buffer, "[INFO] Watch added on %s | index: %d", path, index);
