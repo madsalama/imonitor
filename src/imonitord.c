@@ -213,7 +213,7 @@ else {
 		wtable[index].path = calloc(path_len + 1, sizeof(char));  // add one byte for NULL terminator '\0'
 		strncpy(wtable[index].path, path, path_len); 
 		watch_count++;
-		sprintf(response_buffer, "[INFO] Watch added on %s | index: %d", path, index);
+		sprintf(response_buffer, "[INFO] Watch added on %s | ID: %d", path, index+1);
 	}
      }
 
@@ -233,7 +233,7 @@ else {
 		}
 		else {	
 			index = id - 1;
-			wd = wtable[index].wd;
+			wd = wtable[index].wd;  // avoiding lookup, but on error verbosity cost
 		}
 		
 		if (wd < 0){
@@ -246,10 +246,11 @@ else {
                         sprintf(response_buffer, "[ERROR] Could not remove watch on %d : %s ", wd, strerror(errno));
                 }
                 else {	
-			sprintf(response_buffer, "[INFO] Watch removed on %s | index: %d", wtable[index].path, index);
+			sprintf(response_buffer, "[INFO] Watch removed on %s | ID: %d", wtable[index].path, index+1);
 			memset(wtable[index].path,0, path_len + 1);  // clear memory
 			free(wtable[index].path);                    // free memory
 			wtable[index].path = NULL;                   // nullify pointer
+			wtable[index].wd = -1 ;			     // no-watch
 			watch_count--;
                      }
 	}

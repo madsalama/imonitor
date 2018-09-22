@@ -46,3 +46,14 @@ BUG #1 : FIXED
 ./imonitor remove /var/log
 imonitord: [ERROR] Could not remove watch on 1 : Invalid argument
 ```
+
+BUG #2: Handle where ID doesn not exist - message is not meaningful
+````
+[msalama@localhost src]$ ./imonitor list
+imonitord: [INFO] Watching ...
+    👁️ ID:2 -> PATH:/home/msalama/imonitor/src
+    👁️ ID:3 -> PATH:/var
+[msalama@localhost src]$ ./imonitor remove 1
+imonitord: [ERROR] Could not remove watch on 4 : Invalid argument
+```
+
