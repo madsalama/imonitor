@@ -1,9 +1,8 @@
 
 #### NOTE: [ONLY MERGE WITH MAIN IFF TODO LIST IS #DONE]
 
---------
- [TODO]
---------
+
+### [TODO]
 
 1. handle any valgrind warnings/errors as you go.
 2. handle trailing '\n' char when listing watch paths
