@@ -169,6 +169,7 @@ char action[10];
 strcpy(action, rd.action);
 
 int path_len = rd_ptr -> path_len;
+int id = rd_ptr -> id;
 
 char path[path_len];
 strcpy(path, rd.path);
@@ -222,17 +223,30 @@ else {
 	else if (!strcmp(action,"remove")){
 
 		// client sends path, map path to corresponding wd
+		// client sends id, map id to wd|path
+		
 		int index;
-		int wd = lookup_wd(path, &index);
+		int wd;
 
+		if (id == 0){ // = user passed string not integer
+			wd = lookup_wd(path, &index); 
+		}
+		else {	
+			index = id - 1;
+			wd = wtable[index].wd;
+		}
+		
 		if (wd < 0){
-			sprintf(response_buffer, "[ERROR] Watch on %s doesn't exist!", path);
+			if (wtable[index].path == NULL)
+				sprintf(response_buffer, "[ERROR] Watch on %s doesn't exist!", path);
+			else
+				sprintf(response_buffer, "[ERROR] Watch on %s doesn't exist!",wtable[index].path);
 		}
                 else if( inotify_rm_watch(fd, wd) == -1  ){
                         sprintf(response_buffer, "[ERROR] Could not remove watch on %d : %s ", wd, strerror(errno));
                 }
                 else {	
-			sprintf(response_buffer, "[INFO] Watch removed on %s | index: %d", path, index);
+			sprintf(response_buffer, "[INFO] Watch removed on %s | index: %d", wtable[index].path, index);
 			memset(wtable[index].path,0, path_len + 1);  // clear memory
 			free(wtable[index].path);                    // free memory
 			wtable[index].path = NULL;                   // nullify pointer
@@ -404,6 +418,7 @@ int lookup_wd(char path[], int* index){
 	return -1;
 }
 
+
 int lookup_adding_index(){
 	int index = 0;
 	int count = 0;
@@ -425,8 +440,8 @@ void list_watches(char list[]){
 		if ( wtable[i].path == NULL )
 			continue;
 		else {
-			char string[ strlen(wtable[i].path) ]; 
-			sprintf(string, "\t👁️ %s\n", wtable[i].path);
+			char string[ strlen(wtable[i].path) + 25 ]; 
+			sprintf(string, "    👁️ ID:%d -> PATH:%s\n",i+1, wtable[i].path);
 			strcat(list, string);
 			count++; // found one!
 		}

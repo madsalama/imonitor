@@ -41,7 +41,7 @@ unsigned char* serialize_request_data (unsigned char* request_buffer, struct req
 
   request_buffer = serialize_int(request_buffer, rd -> action_len );
   request_buffer = serialize_int(request_buffer, rd -> path_len   );
-  request_buffer = serialize_int(request_buffer, rd -> wd);
+  request_buffer = serialize_int(request_buffer, rd -> id);
 
   request_buffer = serialize_string(request_buffer, rd -> action_len, rd -> action);
   request_buffer = serialize_string(request_buffer, rd -> path_len, rd -> path);
@@ -51,7 +51,7 @@ unsigned char* serialize_request_data (unsigned char* request_buffer, struct req
 
 // length of each part needed to deserialize
 // separators are a bad idea because components may contain a separator char as content.
-// request_buffer = { <action_len> , <path_len> , wd, <action> , <path> };
+// request_buffer = { <action_len> , <path_len> , id, <action> , <path> };
 
 // 000 3 000 8 000 255 add /var/log 
 
@@ -74,8 +74,8 @@ void deserialize_request_data(unsigned char* request_buffer, struct request_data
 	request_buffer = request_buffer + 4;
 
         value = deserialize_int(request_buffer);
-        rd -> wd = value;
-        printf("deserialize: wd_value = %d \n", rd -> wd );
+        rd -> id = value;
+        printf("deserialize: id_value = %d \n", rd -> id );
 
 	request_buffer = request_buffer + 4;
 

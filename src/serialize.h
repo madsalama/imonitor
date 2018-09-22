@@ -6,7 +6,7 @@
 struct request_data {
 	int action_len;
 	int path_len;
-	int wd;
+	int id;
 	char action[10];
         char path[PATH_MAX];
 };
