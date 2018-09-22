@@ -391,9 +391,12 @@ int lookup_wd(char path[], int* index){
 
 int lookup_adding_index(){
 	int index = 0;
-	for (index = 0; index < watch_count; index++){
+	int count = 0;
+	for (index = 0; count < watch_count; index++){
 		if ( wtable[index].path == NULL )
 			return index;
+		else
+			count++; // found one!
 	}
 	return index;
 }
