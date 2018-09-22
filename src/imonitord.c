@@ -207,7 +207,7 @@ else {
 	}
 	else
 	{ // SUCCESS! 
-		wtable[index].path = calloc(path_len + 1, sizeof(char));  // add one byte for '\0'
+		wtable[index].path = calloc(path_len + 1, sizeof(char));  // add one byte for NULL terminator '\0'
 		strncpy(wtable[index].path, path, path_len); 
 		watch_count++;
 		sprintf(response_buffer, "[INFO] Watch added on %s | index: %d", path, index);
@@ -231,7 +231,7 @@ else {
                 }
                 else {	
 			sprintf(response_buffer, "[INFO] Watch on %s removed on index %d", path, index);
-			memset(wtable[index].path,0, path_len);      // clear memory
+			memset(wtable[index].path,0, path_len + 1);  // clear memory
 			free(wtable[index].path);                    // free memory
 			wtable[index].path = NULL;                   // nullify pointer
 			watch_count--;
