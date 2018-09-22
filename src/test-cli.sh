@@ -1,4 +1,5 @@
 #!/bin/bash
+gcc imonitor.c serialize.c -o imonitor
 ./imonitor add /var/log ;
 ./imonitor add `pwd`;
 ./imonitor add /var;

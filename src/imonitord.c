@@ -445,10 +445,10 @@ void list_watches(char list[]){
 			strcat(list, string);
 			count++; // found one!
 		}
-
-	// improve: add code to remove trailing \n for final path
-	
 	}
+
+	// add code to remove trailing \n for final path
+	list[ strlen(list) - 1 ] = '\0';
 }
 // -----------------------
 

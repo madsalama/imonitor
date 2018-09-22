@@ -3,27 +3,28 @@
 
 ### [TODO]
 
-1. handle any valgrind warnings/errors as you go.   [OK] -> [22/9/2018]
-2. handle trailing '\n' char when listing watch paths
-3. make allocated watch_list an actual list (array?) then deserialize it back to client instead of long string. 
-4. cache watch_list; if watch_list not changed;
+*handle any valgrind warnings/errors as you go.   [OK] -> [22/9/2018]*
+
+1. cache watch_list; if watch_list not changed;
 respond with cached result instead of going through the whole list again. (expensive strcat!)
 
-5. implementation for polling inotify watches.
-6. implementation for generating report with designed format.
+3. implementation for polling inotify watches.
+4. implementation for generating report with designed format.
 
 --------
  [DONE]
 --------
 
-[DONE]
-5. handle "add/remove [index]" instead of [path] since path can be too long to enter via CLI.
-6. handle "[index] /var/log" printing in watch_list
+1. handle "add/remove [index]" instead of [path] since path can be too long to enter via CLI.
+2. handle "[index] /var/log" printing in watch_list
+3. handle trailing '\n' char when listing watch paths
 
+4.
 -- handle issue when MAX_WATCH is large(tried +4000), server crashes...
 could be related to...
 
-* BELOW WAS GONNA BE ANOTHER ISSUE LOL 
+5.BELOW WAS GONNA BE ANOTHER ISSUE LOL
+
 ```
 // ~ 5KB/WATCH
 struct watch_data{
