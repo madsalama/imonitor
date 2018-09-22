@@ -147,7 +147,7 @@ void check_arg(int argc, char* arg){
 	}
 	else if ( !strcmp(arg,"add") || !strcmp(arg,"remove")) {
 		if (argc<3){
-			printf("imonitor: [ERROR] watch descriptor or path required\n");
+			printf("imonitor: [ERROR] watched path required\n");
 			exit(EXIT_FAILURE);
 		}
 	}

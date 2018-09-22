@@ -15,11 +15,13 @@
 
 #include "serialize.h"
 
+// improve: make below #defines 
+// configurable instead of hardwired
+
 #define PID_PATH "/var/tmp/imonitor.pid"
 #define SOCK_PATH "/tmp/imonitor.socket"
 #define LOG_PATH "/var/tmp/imonitord.log"
-
-#define MAX_WATCH 3000 // bug: can't increase beyond 2040 = FIXED!
+#define MAX_WATCH 2048
 
 void handle_connection(int);
 void handle_request(char* request_buffer, char* response_buffer);
@@ -49,7 +51,7 @@ struct watch_data{
 struct watch_data* wtable ;
 int watch_count;
 
-/* imonitord: unix domain server daemon
+/* imonitord: unix domain socket inotify daemon
  * init();
  * a. listens for imonitor requests on /var/run/monitor.socket
  * b. creates an inotify instance to serve upcoming watch requests dynamically
@@ -171,7 +173,8 @@ if(!strcmp(action,"add")){
 		wd = lookup_wd(path); 
 	}
 	else {
-		sprintf(response_buffer, "[ERROR] Max number of %d watches exceeded. Remove some watches and try again.", MAX_WATCH);
+		sprintf(response_buffer, "[ERROR] Max number of %d watches exceeded.\
+Remove some watches and try again.", MAX_WATCH);
 		return;
 	}
 	// --------
@@ -186,7 +189,7 @@ if(!strcmp(action,"add")){
 	else
 	{ // SUCCESS 
 		wtable[watch_count].path = calloc(path_len, sizeof(char)); 
-		strcpy(wtable[watch_count].path, path); printf("[DEBUG]: Path added: %s \n", wtable[watch_count].path);
+		strcpy(wtable[watch_count].path, path); // printf("[DEBUG]: Path added: %s \n", wtable[watch_count].path);
 		watch_count++; // printf("[DEBUG]: watch_count incremented = %d \n", watch_count);
 		sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d", path, watch_count);
 	}
@@ -194,10 +197,9 @@ if(!strcmp(action,"add")){
 
 	else if (!strcmp(action,"remove")){
 
-		// if client sends path, map path to corresponding wd
-		// else if client sends wd, use it directly
-		
+		// client sends path, map path to corresponding wd
 		int wd = lookup_wd(path);
+
 		if (wd <= 0){
 			sprintf(response_buffer, "[ERROR] Watch on %s doesn't exist!", path);
 		}
@@ -205,10 +207,9 @@ if(!strcmp(action,"add")){
                         sprintf(response_buffer, "[ERROR] Could not remove watch on %d : %s ", wd, strerror(errno));
                 }
                 else {
-                        sprintf(response_buffer, "[INFO] Watch on %s removed", path);
-			// wtable[watch_count-1].wd = 0;    // invalidate current watch-descriptor
-			// wtable[watch_count-1].path = NULL; // invalidate path (no need, it's an array)
-			watch_count--;                   // decrement watch_count
+			free(wtable[watch_count].path); 
+			watch_count--;                   
+			sprintf(response_buffer, "[INFO] Watch on %s removed", path);
                      }
 	}
 	else if (!strcmp(action,"list") && (watch_count > 0) ){
@@ -352,9 +353,9 @@ void init_socket()
 }
 
 
-// ------------------------
-//  inefficient -> O(N^2)
-// ------------------------
+// ----------------------------
+//  improve: algorithm -> O(N)
+// ----------------------------
 int lookup_wd(char path[]){
 	int i;
 	for (i = 0; i < watch_count; i++){

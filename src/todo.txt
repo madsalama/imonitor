@@ -1,22 +1,21 @@
-[MERGE WITH MAIN WHEN THIS LIST IS ALL #DONE]
+NOTE: [MERGE WITH MAIN WHEN THIS LIST IS ALL #DONE]
 
+--------
+ [TODO]
+--------
 -1- handle trailing '\n' char when listing watch paths
-
-[NOW POSSIBLE SINCE LIST IS MALLOC'D]
 -2- cache watch_list; if watch_list not changed;
 respond with cached result instead of going through the whole list again. (expensive strcat!)
-
 
 -3- remove WD from serialized/deserialized request and request_data structs
 since by design now, only paths are allowed for add/remove
 
-[TODO]
 -4- implementation for handling polling inotify watches.
-
-[TODO]
 -5- implementation to handle the required report formatting according to watch events.
 
-[DONE]
+--------
+ [DONE]
+--------
 -- handle issue when MAX_WATCH is large(tried +4000), server crashes...
 could be related to...
 
