@@ -5,11 +5,13 @@
 
 #### handle any valgrind warnings/errors as you go.   [OK] -> [22/9/2018]
 
-1. cache watch_list; if watch_list not changed;
-respond with cached result instead of going through the whole list again. (expensive strcat!)
-
+[HIGH-PRIO]
 3. implementation for polling inotify watches.
 4. implementation for generating report with designed format.
+
+[LOW-PRIO]
+1. cache watch_list; if watch_list not changed;
+respond with cached result instead of going through the whole list again. (expensive strcat!)
 
 --------
  [DONE]
