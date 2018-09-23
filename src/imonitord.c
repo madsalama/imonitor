@@ -222,7 +222,7 @@ Remove some watches and try again.", MAX_WATCH);
 else {
 	int index = lookup_adding_index();
 	
-	if((wtable[index].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){ 
+	if((wtable[index].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_ACCESS | IN_CLOSE_WRITE )) == -1  ){ 
 		sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
 	}
 	else

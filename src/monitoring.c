@@ -60,38 +60,26 @@ void handle_events(int fd)  {
 
                    event = (const struct inotify_event *) ptr;
 
-                   /* Print event type */
-
-                   if (event->mask & IN_OPEN){
-			printf("IN_OPEN: ");
+		   // :FILE:
+		   // IN_ACCESS? mmap(original):
+		   // 		- IN_CLOSE_WRITE? mmap(final) -> sdiff(original, final) -> 
+		   // 	flush_diff_to_disk -> munmap(original,final)
+		   
+		   // WATCH ON DIR
+                   if (event->mask & IN_ACCESS){
+			printf("IN_ACCESS: ");
 			fflush(stdout);
-		}
-                   if (event->mask & IN_CLOSE_NOWRITE)
-                       printf("IN_CLOSE_NOWRITE: ");
-                   if (event->mask & IN_CLOSE_WRITE)
-                       printf("IN_CLOSE_WRITE: ");
 
-                   /* Print the name of the watched directory */
-	           /*
-                   for (i = 1; i < argc; ++i) {
-                       if (wd[i] == event->wd) {
-                           printf("%s/", argv[i]);
-                           break;
-                       }
-                   }
-			*/
+                   if (event->len){
+			printf("%s", event->name); // GET FILE NAME
+			fflush(stdout);
+		   }
+	
+	           // dir_path = lookup_path_wd(event->wd);
+	           // file_path = strcat(dir_path, event->len); 
 
-                   /* Print the name of the file */
+		   }
 
-                   if (event->len)
-                       printf("%s", event->name);
-
-                   /* Print type of filesystem object */
-
-                   if (event->mask & IN_ISDIR)
-                       printf(" [directory]\n");
-                   else
-                       printf(" [file]\n");
                }
            }
        }
@@ -102,9 +90,6 @@ int handle_inotify_events(int fd) {
 
 	int out = open(LOG_PATH, O_RDWR|O_CREAT|O_APPEND, 0600);
 	if (-1 == out) { perror(LOG_PATH); return 255; }
-
-	int save_out = dup(fileno(stdout));
-	int save_err = dup(fileno(stderr));
 
 	if (-1 == dup2(out, fileno(stdout))) { perror("cannot redirect stdout"); return 255; }
         if (-1 == dup2(out, fileno(stderr))) { perror("cannot redirect stderr"); return 255; }
