@@ -13,14 +13,17 @@
 #include <poll.h>
 #include <limits.h>
 
-#include "serialize.h"
+#include "serialization.h"
+#include "monitoring.h"
 
 // improve: make below #defines 
 // configurable instead of hardwired
 
 #define PID_PATH "/var/tmp/imonitor.pid"
 #define SOCK_PATH "/tmp/imonitor.socket"
+
 #define LOG_PATH "/var/tmp/imonitord.log"
+#define MONITOR_LOG_PATH "/var/tmp/monitoring.log"
 #define MAX_WATCH 2048
 
 void handle_connection(int);
@@ -41,6 +44,7 @@ char* watch_list;
 
 // handle forked child (tbd)
 void handle_child(int sig);
+void fork_handler(); 
 
 void handle_args(int argc, char* argv[]);
 void kill_daemon();
@@ -70,6 +74,7 @@ int watch_count;
  * d. calls watch handler in a subprocess (fork) -> while(1)/POLL
  */
 
+// --------------------------------------
 int main(int argc, char *argv[])
 {
         int client_sockfd;
@@ -127,6 +132,24 @@ int main(int argc, char *argv[])
 	
 	watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );   // 2048 WATCH * 4096 B = 1MB
 
+	// 1. FORK INOTIFY HANDLER 
+	// (CHILD = SHARES PARENT MEMORY/COPY-ON-WRITE)
+	
+        switch(fork())
+        {
+                case -1:
+                        perror("Error forking connection handler");
+                        break;
+                case 0: 
+                        handle_inotify_events(fd);
+			exit(0);
+                default:
+			break;
+        }
+	
+	// 2. KEEP LISTENING 
+	// FOR ADD/REMOVE/LIST EVENTS
+	
         for(;;) // MAIN LOOP
         {
                 printf("Waiting for a connection\n");
@@ -145,13 +168,9 @@ int main(int argc, char *argv[])
                 
 		handle_connection(client_sockfd);
 
-		// if (poll()){
-		//	handle_inotify_events();
-		// }
-
         }
 }
-
+// -------------------------------------------
 
 void handle_request(char* request_buffer, char* response_buffer){
 

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "serialize.h"
+#include "serialization.h"
 
 /* Write big-endian int value into request_buffer; assumes 32-bit int and 8-bit char. */
 

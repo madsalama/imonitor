@@ -7,6 +7,9 @@
 
 [HIGH-PRIO]
 3. implementation for polling inotify watches.
+-- handle child to actually show output (redirect/pipes).
+
+
 4. implementation for generating report with designed format.
 
 [LOW-PRIO]

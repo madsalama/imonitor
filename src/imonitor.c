@@ -7,7 +7,7 @@
 #include <limits.h>
 #include <errno.h>
 
-#include "serialize.h"
+#include "serialization.h"
 
 #define SOCK_PATH "/tmp/imonitor.socket"
 

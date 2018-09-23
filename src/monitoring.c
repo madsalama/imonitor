@@ -5,6 +5,7 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 
+
 /* 
    Read all available inotify events from the file descriptor 'fd'.
    wd is the table of watch descriptors for the directories in argv.
@@ -13,7 +14,7 @@
    Entry 0 of wd and argv is unused. 
 */
 		  
-static void handle_events(int fd, int watch_count, int* wd, char* paths[])  {
+void handle_events(int fd)  {
 
            char buf[4096]
                __attribute__ ((aligned(__alignof__(struct inotify_event))));
@@ -67,13 +68,14 @@ static void handle_events(int fd, int watch_count, int* wd, char* paths[])  {
                        printf("IN_CLOSE_WRITE: ");
 
                    /* Print the name of the watched directory */
-
+	           /*
                    for (i = 1; i < argc; ++i) {
                        if (wd[i] == event->wd) {
                            printf("%s/", argv[i]);
                            break;
                        }
                    }
+			*/
 
                    /* Print the name of the file */
 
@@ -92,10 +94,9 @@ static void handle_events(int fd, int watch_count, int* wd, char* paths[])  {
 
 // imonitord: init 
 // -> fork(): handle_inotify_events(<params>);
-int handle_inotify_events(int fd, int watch_count, int* wd, char* paths[]) {
+int handle_inotify_events(int fd) {
 
-        int fd, i, poll_num;
-        int *wd;
+        int i, poll_num;
         nfds_t nfds;
         struct pollfd fds[2];
 
@@ -113,15 +114,14 @@ int handle_inotify_events(int fd, int watch_count, int* wd, char* paths[]) {
 				continue;
 		perror("poll");
 		exit(EXIT_FAILURE);
-	}
+		}
 
-               if (poll_num > 0) {
-                   if (fds[0].revents & POLLIN) {
-                       handle_events(fd, wd, argc, argv);
-                   }
-               }
+		if (poll_num > 0) {
+			if (fds[0].revents & POLLIN) {
+				handle_events(fd);
+			}
+		}
            }
 
-           free(wd);
            exit(EXIT_SUCCESS);
 }
