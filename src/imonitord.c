@@ -23,7 +23,6 @@
 #define SOCK_PATH "/tmp/imonitor.socket"
 
 #define LOG_PATH "/var/tmp/imonitord.log"
-#define MONITOR_LOG_PATH "/var/tmp/monitoring.log"
 #define MAX_WATCH 2048
 
 void handle_connection(int);
@@ -141,8 +140,7 @@ int main(int argc, char *argv[])
                         perror("Error forking connection handler");
                         break;
                 case 0: 
-                        handle_inotify_events(fd);
-			exit(0);
+                        handle_inotify_events(fd); // child 
                 default:
 			break;
         }

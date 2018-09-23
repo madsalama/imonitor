@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <sys/inotify.h>
 #include <unistd.h>
+#include <fcntl.h>
 
+#define LOG_PATH "/var/tmp/monitoring.log"
 
 /* 
    Read all available inotify events from the file descriptor 'fd'.
@@ -60,8 +62,10 @@ void handle_events(int fd)  {
 
                    /* Print event type */
 
-                   if (event->mask & IN_OPEN)
-                       printf("IN_OPEN: ");
+                   if (event->mask & IN_OPEN){
+			printf("IN_OPEN: ");
+			fflush(stdout);
+		}
                    if (event->mask & IN_CLOSE_NOWRITE)
                        printf("IN_CLOSE_NOWRITE: ");
                    if (event->mask & IN_CLOSE_WRITE)
@@ -96,6 +100,16 @@ void handle_events(int fd)  {
 // -> fork(): handle_inotify_events(<params>);
 int handle_inotify_events(int fd) {
 
+	int out = open(LOG_PATH, O_RDWR|O_CREAT|O_APPEND, 0600);
+	if (-1 == out) { perror(LOG_PATH); return 255; }
+
+	int save_out = dup(fileno(stdout));
+	int save_err = dup(fileno(stderr));
+
+	if (-1 == dup2(out, fileno(stdout))) { perror("cannot redirect stdout"); return 255; }
+        if (-1 == dup2(out, fileno(stderr))) { perror("cannot redirect stderr"); return 255; }
+
+	
         int i, poll_num;
         nfds_t nfds;
         struct pollfd fds[2];
@@ -122,6 +136,9 @@ int handle_inotify_events(int fd) {
 			}
 		}
            }
+
+	fflush(stdout); close(out);
+        fflush(stderr);
 
            exit(EXIT_SUCCESS);
 }
