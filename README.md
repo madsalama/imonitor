@@ -30,6 +30,6 @@ imonitord: [INFO] Watch removed on /home/msalama/imonitor/src | ID: 3
 $ imonitor list
 imonitord: [INFO] Watching ...
     👁️ ID:1 -> PATH:/var/log
-    👁️ ID:3 -> PATH:/home/msalama/imonitor/src 
+    👁️ ID:2 -> PATH:/home/msalama/imonitor/src 
 ```
 
