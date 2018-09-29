@@ -318,6 +318,7 @@ else {
 	}
 }
 
+
 void handle_connection(int client_sockfd)
 {
         unsigned char request_buffer[PATH_MAX]; 

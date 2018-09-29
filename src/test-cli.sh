@@ -9,4 +9,3 @@ gcc imonitor.c serialization.c -o imonitor
 
 ./imonitor list;
 
-echo > /var/tmp/monitoring.log
