@@ -18,6 +18,8 @@ D /imonitor.c
 A /imonitor.c
 M /imonitor.c 
 
+[TODO]
+In case M = specify what are the changes made to the file and log them to report.
 
 [TODO]
 1. cache watch_list; if watch_list not changed;
