@@ -1,7 +1,7 @@
 # imonitor
 Dynamic inotify monitoring daemon
 
-### Manages inotify watches on multiple directories
+Manages inotify watches on multiple directories
 
 #### USAGE:
 
