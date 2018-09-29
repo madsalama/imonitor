@@ -24,12 +24,12 @@ imonitord: [INFO] Watch added on /home/msalama/imonitor/src | ID: 2
 $ imonitor add /var
 imonitord: [INFO] Watch added on /var | ID: 3
 
-$ imonitor remove 2 
-imonitord: [INFO] Watch removed on /home/msalama/imonitor/src | ID: 2
+$ imonitor remove /var
+imonitord: [INFO] Watch removed on /home/msalama/imonitor/src | ID: 3
 
 $ imonitor list
 imonitord: [INFO] Watching ...
     👁️ ID:1 -> PATH:/var/log
-    👁️ ID:3 -> PATH:/var
+    👁️ ID:3 -> PATH:/home/msalama/imonitor/src 
 ```
 
