@@ -5,18 +5,17 @@
 
 #### handle any valgrind warnings/errors as you go.   [OK] -> [22/9/2018]
 
-[HIGH-PRIO]
+[IN-PROGRESS]
 1. implementation for polling inotify watches. [DONE]
 -- handle child to actually show output (redirect/pipes). [DONE]
 2. implementation for generating report with designed format.
 
-[STATUS]
+[TODO]
 + NEWLY ADDED FILES IN WATCHED PATH ARE NOT WATCHED AUTOMATICALLY
-+ ADD FULL PATH TO REPORT +EVENT_NAME => USE THREAD INSTEAD OF FORK TO READ WTABLE
 + USE HASHMAP TO IMPROVE READ WTABLE PERFORMANCE IN ALL OPERATIONS (ADD/REMOVE/READ)
 
 
-[LOW-PRIO]
+[TODO]
 1. cache watch_list; if watch_list not changed;
 respond with cached result instead of going through the whole list again. (expensive strcat!)
 2. use a hashmap to store watches instead of linear array operations for linear/add/remove
@@ -26,6 +25,7 @@ respond with cached result instead of going through the whole list again. (expen
 - LIST OF IGNORE FILES (SWP/SWX...)
 - add . should resolve by daemon to actually add `pwd` 
 - INOTIFY ONLY MONITORS DIRECTORIES NOT INDIVIDUAL FILES!
+- ADD FULL PATH TO REPORT +EVENT_NAME => USE THREAD INSTEAD OF FORK TO READ WTABLE
 
 --------
  [DONE]

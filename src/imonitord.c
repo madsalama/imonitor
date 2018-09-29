@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <poll.h>
 #include <limits.h>
+#include <pthread.h>
 
 #include "serialization.h"
 #include "monitoring.h"
@@ -68,6 +69,14 @@ struct watch_data{
 struct watch_data* wtable ;
 int watch_count;
 
+struct thread_data{
+	struct watch_data *wtable;
+	int fd;
+	int* watch_count; 
+};
+
+FILE* logfile_daemon;
+
 /* imonitord: unix domain socket inotify daemon
  * init();
  * a. listens for imonitor requests on /var/run/monitor.socket
@@ -87,6 +96,18 @@ int main(int argc, char *argv[])
         struct sockaddr_un remote;
         int t;
 
+	// INIT WORKER THREAD
+	int s, ret, numthreads = 1;
+	void *thread_status;
+	pthread_t thread;
+	pthread_attr_t attr;
+	
+	s = pthread_attr_init(&attr);
+        if (s != 0){
+		fprintf(logfile_daemon, "THREAD INIT ERROR\n"); fflush(logfile_daemon);
+	}
+	// --------------------------------
+
         if(argc > 1) {handle_args(argc, argv);}
 
         signal(SIGCHLD, handle_child);  // A CHILD RECEIVED A SIG, WHAT SHOULD PARENT DO...?
@@ -100,7 +121,7 @@ int main(int argc, char *argv[])
                 exit(EXIT_FAILURE);
         }
 
-        printf("Listening...\n");
+        fprintf(logfile_daemon,"Listening...\n");fflush(logfile_daemon);
         fflush(stdout);
 
 
@@ -127,7 +148,7 @@ int main(int argc, char *argv[])
 	}
 */
 
-	// more elegant and efficient way of creating a key/value table
+	// more elegant way of creating a key/value table
 	wtable = calloc( MAX_WATCH, sizeof(struct watch_data) );
 	if (wtable == NULL){
 	        perror("calloc");
@@ -136,27 +157,31 @@ int main(int argc, char *argv[])
 
 	watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );   // 2048 WATCH * 4096 B = 1MB
 
-	// 1. FORK INOTIFY HANDLER 
-	// (CHILD = SHARES PARENT MEMORY/COPY-ON-WRITE)
-	
-        switch(fork())
-        {
-                case -1:
-                        perror("Error forking connection handler");
-                        break;
-                case 0: 
-                        handle_inotify_events(fd); // child 
-                default:
-			break;
-        }
+
+	// 1. SPAWN A WORKER HANDLER THREAD
+	fprintf(logfile_daemon, "INIT WORKER....\n"); fflush(logfile_daemon);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	struct thread_data* tdata;
+	tdata = malloc(sizeof(struct thread_data)); 
+        tdata -> wtable = wtable;
+        tdata -> fd = fd;
+	tdata -> watch_count = &watch_count;
+
+	ret = pthread_create(&thread, &attr, handle_inotify_events, tdata);
+
+	if (ret) {
+		perror("Error while creating thread");
+		exit(EXIT_FAILURE);
+	}
 	
 	// 2. KEEP LISTENING 
 	// FOR ADD/REMOVE/LIST EVENTS
 	
         for(;;) // MAIN LOOP
         {
-                printf("Waiting for a connection\n");
-                fflush(stdout);
+                fprintf(logfile_daemon, "Waiting for a connection\n");
+                fflush(logfile_daemon);
                 t = sizeof(remote);
 	
 		// accept() will block until a connection is received
@@ -166,7 +191,7 @@ int main(int argc, char *argv[])
                         exit(EXIT_FAILURE);
                 }
 
-                printf("Accepted connection\n");
+                fprintf(logfile_daemon, "Accepted connection\n");
                 fflush(stdout);
                 
 		handle_connection(client_sockfd);
@@ -298,8 +323,8 @@ void handle_connection(int client_sockfd)
         unsigned char request_buffer[PATH_MAX]; 
 	unsigned char response_buffer[PATH_MAX];
         unsigned int len;
-	printf("Handling connection\n");
-        fflush(stdout);
+	fprintf(logfile_daemon, "Handling connection\n");
+        fflush(logfile_daemon);
 	
 									     // ^ handle potential buffer overflow
         while(len = recv(client_sockfd, &request_buffer, PATH_MAX , 0), (len > 0 && len < PATH_MAX) ){
@@ -313,16 +338,16 @@ void handle_connection(int client_sockfd)
 	}
 
         close(client_sockfd);
-        printf("Done handling\n");
-        fflush(stdout);
+        fprintf(logfile_daemon, "Done handling\n");
+        fflush(logfile_daemon);
 }
 
 void handle_child(int sig)
 {
         int status;
 
-        printf("Cleaning up child\n");
-        fflush(stdout);
+        fprintf(logfile_daemon, "Cleaning up child\n");
+        fflush(logfile_daemon);
 
         wait(&status);
 }
@@ -343,17 +368,20 @@ void kill_daemon()
         if(pidfile = fopen(PID_PATH, "r"))
         {
                 fscanf(pidfile, "%d", &pid);
-                printf("Killing PID %d\n", pid);
+                fprintf(stdout, "Killing PID %d\n", pid); fflush(stdout); 
                 kill(pid, SIGTERM); //kill it gently
 	        close(fd);
         	free(wtable);
         }
         else
         {
-                printf("un_server not running\n"); //or you have bigger problems
+                fprintf(stdout, "un_server not running\n"); //or you have bigger problems
+		fflush(stdout);
         }
 	exit(EXIT_SUCCESS);
 }
+
+
 
 void daemonize()
 {
@@ -363,12 +391,9 @@ void daemonize()
         switch(pid = fork())
         {
                 case 0:
-                        //redirect I/O streams
                         freopen("/dev/null", "r", stdin);
-                        freopen(LOG_PATH, "w", stdout);
-                        freopen(LOG_PATH, "w", stderr);
-                        //make process group leader
-                        setsid();
+                       	logfile_daemon = fopen(LOG_PATH, "w");
+                        setsid(); // make process group leader
                         chdir("/");
                         break;
                 case -1:
@@ -383,6 +408,8 @@ void daemonize()
                         exit(EXIT_SUCCESS);
         }
 }
+
+
 
 void stop_server()
 {
@@ -476,4 +503,5 @@ void list_watches(char list[]){
 	list[ strlen(list) - 1 ] = '\0';
 }
 // -----------------------
+
 

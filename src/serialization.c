@@ -62,26 +62,26 @@ void deserialize_request_data(unsigned char* request_buffer, struct request_data
 	int value;
 
         action_length = deserialize_int(request_buffer);
-	printf("deserialize: action_length = %d \n", action_length);
+	//fprintf(logfile_daemon,"deserialize: action_length = %d \n", action_length);
 	rd -> action_len = action_length;
 	
 	request_buffer = request_buffer + 4;
 
 	path_length = deserialize_int(request_buffer);
-	printf("deserialize: path_length = %d \n", path_length);
+	//fprintf(logfile_daemon,"deserialize: path_length = %d \n", path_length);
 	rd -> path_len = path_length; 
 
 	request_buffer = request_buffer + 4;
 
         value = deserialize_int(request_buffer);
         rd -> id = value;
-        printf("deserialize: id_value = %d \n", rd -> id );
+        //fprintf(logfile_daemon,"deserialize: id_value = %d \n", rd -> id );
 
 	request_buffer = request_buffer + 4;
 
 	strncpy( rd -> action , request_buffer, action_length);
 	rd -> action[action_length] = '\0';
-	printf("deserialize: action_string = %s \n", rd -> action );
+	//fprintf(logfile_daemon,"deserialize: action_string = %s \n", rd -> action );
 
 	// rd -> action = action_string;	// set address of struct pointer to action_string! (after function returns this address may be corrupted and thus holds garbage or only part of the data)!
 	
@@ -91,7 +91,7 @@ void deserialize_request_data(unsigned char* request_buffer, struct request_data
 
 	strncpy(rd -> path, request_buffer, path_length);
         rd -> path[path_length] = '\0';
-        printf("deserialize: path_string = %s \n", rd -> path );
+        //fprintf(logfile_daemon,"deserialize: path_string = %s \n", rd -> path );
 
 	request_buffer = request_buffer + path_length; 
 

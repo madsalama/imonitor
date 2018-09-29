@@ -1,6 +1,6 @@
 #ifndef MONITORING_H
 #define MONITORING_H
 
-int handle_inotify_events(int fd); 
+void* handle_inotify_events(void* args); 
 
 #endif /*MONITORING_H*/
