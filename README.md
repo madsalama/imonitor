@@ -1,8 +1,11 @@
 # imonitor
-### Dynamic inotify monitoring daemon
+### Dynamic filesystem monitoring daemon
 
-- imonitord: daemon that manages inotify watches on multiple directories
-- imonitor: command line utility
+- imonitord: daemon that manages inotify watches on multiple directories:
+	- add/remove/list any of the running watches.
+	- spawns a worker thread that uses polling to read inotify events.
+
+- imonitor: command line utility that talks to daemon via unix domain socket.
 
 #### USAGE:
 
