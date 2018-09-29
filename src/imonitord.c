@@ -12,23 +12,40 @@
 #include <unistd.h>
 #include <poll.h>
 #include <limits.h>
+#include <pthread.h>
 
-#include "serialize.h"
+#include "serialization.h"
+#include "monitoring.h"
+
+// improve: make below #defines 
+// configurable instead of hardwired
 
 #define PID_PATH "/var/tmp/imonitor.pid"
 #define SOCK_PATH "/tmp/imonitor.socket"
-#define LOG_PATH "/var/tmp/imonitord.log"
 
-#define MAX_WATCH 3000 // bug: can't increase beyond 2040 = FIXED!
+#define LOG_PATH "/var/tmp/imonitord.log"
+#define MAX_WATCH 2048
 
 void handle_connection(int);
 void handle_request(char* request_buffer, char* response_buffer);
 
-int lookup_wd(char path[]);
+// search for given path in wtable
+// if found: return wd and index (where path is found)
+int lookup_wd(char path[], int* index);
+
+// search for appropriate location to add new watch_data
+// either in a "removed data" location [path -> NULL] 
+// or at the end of the queue (where: local count < watch_count)
+int lookup_adding_index();
+
+// recreate watch_list string by going through wtable element by element O(N)
+// expensive strcat is involved, so watch_list might need to be cached.
 void list_watches(char list[]); 
 char* watch_list;
 
+// handle forked child (tbd)
 void handle_child(int sig);
+void fork_handler(); 
 
 void handle_args(int argc, char* argv[]);
 void kill_daemon();
@@ -39,17 +56,28 @@ void init_socket();
 int server_sockfd;
 int fd;
 
-// ~ 5KB/WATCH
+
+// improve: convert below watch_data table to a hash-table
+// implement lookup (path/wd) and add/remove operations
+
+// struct for handling watch data table | around 5KB/WATCH (MAX)
 struct watch_data{
         int wd;
 	char* path;
-        // char path[PATH_MAX]; // issue/bug: stack allocated while wtable on heap?
 };
 
 struct watch_data* wtable ;
 int watch_count;
 
-/* imonitord: unix domain server daemon
+struct thread_data{
+	struct watch_data *wtable;
+	int fd;
+	int* watch_count; 
+};
+
+FILE* logfile_daemon;
+
+/* imonitord: unix domain socket inotify daemon
  * init();
  * a. listens for imonitor requests on /var/run/monitor.socket
  * b. creates an inotify instance to serve upcoming watch requests dynamically
@@ -59,6 +87,7 @@ int watch_count;
  * d. calls watch handler in a subprocess (fork) -> while(1)/POLL
  */
 
+// --------------------------------------
 int main(int argc, char *argv[])
 {
         int client_sockfd;
@@ -66,6 +95,18 @@ int main(int argc, char *argv[])
 
         struct sockaddr_un remote;
         int t;
+
+	// INIT WORKER THREAD
+	int s, ret, numthreads = 1;
+	void *thread_status;
+	pthread_t thread;
+	pthread_attr_t attr;
+	
+	s = pthread_attr_init(&attr);
+        if (s != 0){
+		fprintf(logfile_daemon, "THREAD INIT ERROR\n"); fflush(logfile_daemon);
+	}
+	// --------------------------------
 
         if(argc > 1) {handle_args(argc, argv);}
 
@@ -80,7 +121,7 @@ int main(int argc, char *argv[])
                 exit(EXIT_FAILURE);
         }
 
-        printf("Listening...\n");
+        fprintf(logfile_daemon,"Listening...\n");fflush(logfile_daemon);
         fflush(stdout);
 
 
@@ -113,13 +154,34 @@ int main(int argc, char *argv[])
 	        perror("calloc");
         	exit(EXIT_FAILURE);
 	}
-	
-	watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );
 
+	watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );   // 2048 WATCH * 4096 B = 1MB
+
+
+	// 1. SPAWN A WORKER HANDLER THREAD
+	fprintf(logfile_daemon, "INIT WORKER....\n"); fflush(logfile_daemon);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+
+	struct thread_data* tdata;
+	tdata = malloc(sizeof(struct thread_data)); 
+        tdata -> wtable = wtable;
+        tdata -> fd = fd;
+	tdata -> watch_count = &watch_count;
+
+	ret = pthread_create(&thread, &attr, handle_inotify_events, tdata);
+
+	if (ret) {
+		perror("Error while creating thread");
+		exit(EXIT_FAILURE);
+	}
+	
+	// 2. KEEP LISTENING 
+	// FOR ADD/REMOVE/LIST EVENTS
+	
         for(;;) // MAIN LOOP
         {
-                printf("Waiting for a connection\n");
-                fflush(stdout);
+                fprintf(logfile_daemon, "Waiting for a connection\n");
+                fflush(logfile_daemon);
                 t = sizeof(remote);
 	
 		// accept() will block until a connection is received
@@ -129,18 +191,14 @@ int main(int argc, char *argv[])
                         exit(EXIT_FAILURE);
                 }
 
-                printf("Accepted connection\n");
+                fprintf(logfile_daemon, "Accepted connection\n");
                 fflush(stdout);
                 
 		handle_connection(client_sockfd);
 
-		// if (poll()){
-		//	handle_inotify_events();
-		// }
-
         }
 }
-
+// -------------------------------------------
 
 void handle_request(char* request_buffer, char* response_buffer){
 
@@ -158,20 +216,30 @@ char action[10];
 strcpy(action, rd.action);
 
 int path_len = rd_ptr -> path_len;
+int id = rd_ptr -> id;
 
 char path[path_len];
 strcpy(path, rd.path);
 
+// WORST_ADD => O(2N): 
+// lookup_wd -> O(N)
+// lookup_adding_index -> O(N)
+
+// N << WATCH_COUNT | LINEAR PERFORMANCE
+// AVERAGE_ADD => O(2*WATCH_COUNT)
+
 if(!strcmp(action,"add")){
 
 	int wd;
+	int index;
 	
 	// LOOKUP IFF MAX_WATCH NOT EXCEEDED
 	if ( watch_count < MAX_WATCH ){
-		wd = lookup_wd(path); 
+		wd = lookup_wd(path, &index); 
 	}
 	else {
-		sprintf(response_buffer, "[ERROR] Max number of %d watches exceeded. Remove some watches and try again.", MAX_WATCH);
+		sprintf(response_buffer, "[ERROR] Max number of %d watches exceeded.\
+Remove some watches and try again.", MAX_WATCH);
 		return;
 	}
 	// --------
@@ -180,44 +248,70 @@ if(!strcmp(action,"add")){
 	if (wd > 0){ // FAIL
 		sprintf(response_buffer,"[ERROR] Watch on %s already exists!", path);
 	} // FAIL
-	else if((wtable[watch_count].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_OPEN | IN_CLOSE_WRITE )) == -1  ){ 
+
+else {
+	int index = lookup_adding_index();
+	
+	if((wtable[index].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_MODIFY )) == -1  ){ 
 		sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
 	}
 	else
-	{ // SUCCESS 
-		wtable[watch_count].path = calloc(path_len, sizeof(char)); 
-		strcpy(wtable[watch_count].path, path); printf("[DEBUG]: Path added: %s \n", wtable[watch_count].path);
-		watch_count++; // printf("[DEBUG]: watch_count incremented = %d \n", watch_count);
-		sprintf(response_buffer, "[INFO] Watch added on %s | watch_count: %d", path, watch_count);
+	{ // SUCCESS! 
+		wtable[index].path = calloc(path_len + 1, sizeof(char));  // add one extra byte for NULL terminator '\0'
+		strncpy(wtable[index].path, path, path_len); 
+		watch_count++;
+		sprintf(response_buffer, "[INFO] Watch added on %s | ID: %d", path, index+1);
 	}
+     }
+
+
 }
 
 	else if (!strcmp(action,"remove")){
 
-		// if client sends path, map path to corresponding wd
-		// else if client sends wd, use it directly
+		// client sends path, map path to corresponding wd
+		// client sends id, map id to wd|path
 		
-		int wd = lookup_wd(path);
-		if (wd <= 0){
-			sprintf(response_buffer, "[ERROR] Watch on %s doesn't exist!", path);
+		int index;
+		int wd;
+
+		if (id == 0){ // = user passed string not integer
+			wd = lookup_wd(path, &index); 
 		}
-                else if( inotify_rm_watch(fd, wd) == -1  ){
+		else if ( id < 0 || id > watch_count || id > INT_MAX ) { // handle erronous user input
+		sprintf(response_buffer, "[ERROR] Watch ID must be a non-zero +ve integer < watch_count = %d", watch_count);
+			return;
+		}
+		else {
+			index = id - 1;
+                	wd = wtable[index].wd; // avoiding lookup, but on error verbosity cost
+		}
+		
+		if (wd == -1){
+			sprintf(response_buffer, "[ERROR] Watch on %s doesn't exist!", path);
+			return;
+		}
+                else if( inotify_rm_watch(fd, wd) == -1 ){
                         sprintf(response_buffer, "[ERROR] Could not remove watch on %d : %s ", wd, strerror(errno));
                 }
-                else {
-                        sprintf(response_buffer, "[INFO] Watch on %s removed", path);
-			// wtable[watch_count-1].wd = 0;    // invalidate current watch-descriptor
-			// wtable[watch_count-1].path = NULL; // invalidate path (no need, it's an array)
-			watch_count--;                   // decrement watch_count
+                else {	
+			sprintf(response_buffer, "[INFO] Watch removed on %s | ID: %d", wtable[index].path, index+1);
+			memset(wtable[index].path,0, path_len + 1);  // clear memory
+			free(wtable[index].path);                    // free memory
+			wtable[index].path = NULL;                   // nullify pointer
+			wtable[index].wd = -1 ;			     // no-watch
+			watch_count--;
                      }
 	}
 	else if (!strcmp(action,"list") && (watch_count > 0) ){
-		list_watches(watch_list); // list now contains list
-		sprintf(response_buffer, "[INFO]: CURRENTLY WATCHING:\n%s", watch_list);
+                
+		// emptying list to avoid strcat issues
+                // that concats old values for some weird reason O_O'
+
+		memset(watch_list, 0, strlen(watch_list));
+		list_watches(watch_list);
+		sprintf(response_buffer, "[INFO] Watching ...\n%s", watch_list);
 		
-		// emptying list to avoid strcat issues 
-		// that concats old values for some weird reason O_O'
-		memset(watch_list, '\0', PATH_MAX * MAX_WATCH);
 	}
 	else{
 		sprintf(response_buffer,"[ERROR]: No watches exist to list!");
@@ -229,8 +323,8 @@ void handle_connection(int client_sockfd)
         unsigned char request_buffer[PATH_MAX]; 
 	unsigned char response_buffer[PATH_MAX];
         unsigned int len;
-	printf("Handling connection\n");
-        fflush(stdout);
+	fprintf(logfile_daemon, "Handling connection\n");
+        fflush(logfile_daemon);
 	
 									     // ^ handle potential buffer overflow
         while(len = recv(client_sockfd, &request_buffer, PATH_MAX , 0), (len > 0 && len < PATH_MAX) ){
@@ -240,20 +334,20 @@ void handle_connection(int client_sockfd)
 		handle_request( (char*)request_buffer, (char*)response_buffer);   // calls deserialize and handles request
 
 		// after handle_request is returned, response buffer is set and ready to be sent back to client
-		send(client_sockfd, &response_buffer, PATH_MAX, 0);
+		send(client_sockfd, &response_buffer, strlen(response_buffer), 0);
 	}
 
         close(client_sockfd);
-        printf("Done handling\n");
-        fflush(stdout);
+        fprintf(logfile_daemon, "Done handling\n");
+        fflush(logfile_daemon);
 }
 
 void handle_child(int sig)
 {
         int status;
 
-        printf("Cleaning up child\n");
-        fflush(stdout);
+        fprintf(logfile_daemon, "Cleaning up child\n");
+        fflush(logfile_daemon);
 
         wait(&status);
 }
@@ -274,17 +368,20 @@ void kill_daemon()
         if(pidfile = fopen(PID_PATH, "r"))
         {
                 fscanf(pidfile, "%d", &pid);
-                printf("Killing PID %d\n", pid);
+                fprintf(stdout, "Killing PID %d\n", pid); fflush(stdout); 
                 kill(pid, SIGTERM); //kill it gently
 	        close(fd);
         	free(wtable);
         }
         else
         {
-                printf("un_server not running\n"); //or you have bigger problems
+                fprintf(stdout, "un_server not running\n"); //or you have bigger problems
+		fflush(stdout);
         }
 	exit(EXIT_SUCCESS);
 }
+
+
 
 void daemonize()
 {
@@ -294,12 +391,9 @@ void daemonize()
         switch(pid = fork())
         {
                 case 0:
-                        //redirect I/O streams
                         freopen("/dev/null", "r", stdin);
-                        freopen(LOG_PATH, "w", stdout);
-                        freopen(LOG_PATH, "w", stderr);
-                        //make process group leader
-                        setsid();
+                       	logfile_daemon = fopen(LOG_PATH, "w");
+                        setsid(); // make process group leader
                         chdir("/");
                         break;
                 case -1:
@@ -315,11 +409,13 @@ void daemonize()
         }
 }
 
+
+
 void stop_server()
 {
-        unlink(PID_PATH);  //Get rid of pesky pidfile, socket
+        unlink(PID_PATH);  // remove pidfile and socket
         unlink(SOCK_PATH);
-        kill(0, SIGKILL);  //Infanticide :(
+        kill(0, SIGKILL);  // kill process children
         
 	close(fd);
         free(wtable);
@@ -342,7 +438,7 @@ void init_socket()
         unlink(local.sun_path);
         len = strlen(local.sun_path) + sizeof(local.sun_family);
 
-	// chmod(local.sun_path, 0777); // enable permissons on socket file
+	chmod(local.sun_path, 0777); // enable permissons on socket file
 
         if(bind(server_sockfd, (struct sockaddr *)&local, len) == -1)
         {
@@ -352,29 +448,60 @@ void init_socket()
 }
 
 
-// ------------------------
-//  inefficient -> O(N^2)
-// ------------------------
-int lookup_wd(char path[]){
+// ---------------------------------------------------
+//  improve: algorithm -> O(N) on each operation
+//  N = up to watch_count instead of the whole table
+// ---------------------------------------------------
+int lookup_wd(char path[], int* index){
 	int i;
-	for (i = 0; i < watch_count; i++){
-		if( !strcmp(wtable[i].path, path) ) 
-			return wtable[i].wd;	
-		continue;
-	}
+	int count = 0 ;
+	for (i = 0; count < watch_count; i++){
+		if ( wtable[i].path == NULL )
+			continue;
+		else {
+			if( !strcmp(wtable[i].path, path) ){
+				*index = i;
+				return wtable[i].wd;
+                    	}
+
+			count++; // found one	
+		}
+	}	
 	return -1;
 }
 
-void list_watches(char list[]){
-	char string[PATH_MAX]; // iteration variable
-	int i;
-	for (i = 0; i < watch_count; i++){
-		sprintf(string, "- %s\n",wtable[i].path);
-		strcat(list, string);
-	
-	// improve: add code to remove trailing \n for final path
 
+int lookup_adding_index(){
+	int index = 0;
+	int count = 0;
+	for (index = 0; count < watch_count; index++){
+		if ( wtable[index].path == NULL )
+			return index;
+		else
+			count++; // found one!
 	}
+	return index;
+}
+
+void list_watches(char list[]){
+	// char string[PATH_MAX]; // iteration variable
+	int count = 0;
+	int i;
+
+	for (i = 0; count < watch_count; i++){
+		if ( wtable[i].path == NULL )
+			continue;
+		else {
+			char string[ strlen(wtable[i].path) + 25 ]; 
+			sprintf(string, "    👁️ ID:%d -> PATH:%s\n",i+1, wtable[i].path);
+			strcat(list, string);
+			count++; // found one!
+		}
+	}
+
+	// add code to remove trailing \n for final path
+	list[ strlen(list) - 1 ] = '\0';
 }
 // -----------------------
+
 
