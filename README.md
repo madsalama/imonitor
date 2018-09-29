@@ -32,4 +32,3 @@ imonitord: [INFO] Watching ...
     👁️ ID:1 -> PATH:/var/log
     👁️ ID:2 -> PATH:/home/msalama/imonitor/src
 ```
-
