@@ -112,8 +112,6 @@ void handle_events(int fd)  {
 		// CHECK MODIFIED FILES INSIDE WATCHED DIRECTORY
 		if ( event->len ) {
 
-			timestamp();
-
 			char* path = lookup_path(*thread_watch_count, event -> wd );
 
 			reti = regcomp(&regex, "^[.]", 0);  // ignore hidden files
@@ -129,6 +127,9 @@ void handle_events(int fd)  {
 			}
 
 			else if (reti == REG_NOMATCH) {
+				
+				timestamp();
+
 				if ( event->mask & IN_CREATE ) {
                                 	if ( event->mask & IN_ISDIR ) {
 	                                        fprintf(file,"A %s/%s\n", path, event->name );fflush(file);
@@ -153,13 +154,12 @@ void handle_events(int fd)  {
 	                                        fprintf(file,"M %s/%s\n",path, event->name );fflush(file);
 	                                }
 	                        }
-
+				fprintf(file, "\n"); fflush(file);
 			}
 			else {
 				// regerror(reti, &regex, (const)event->name, event->len);
 				fprintf(file,"Regex match failed: %s/%s\n",path, event->name);fflush(file);
 			}
-			fprintf(file, "\n"); fflush(file);
 
 			regfree(&regex);
 			free(path);
@@ -181,11 +181,11 @@ void* handle_inotify_events(void* args) {
 	fd = tdata -> fd;
 	thread_watch_count = tdata -> watch_count;  
 
-	file = fopen(MONITORING_LOG_PATH, "w+");
+	file = fopen(MONITORING_LOG_PATH, "a");
 	if (file == NULL){
 		perror("fopen");
 		exit(EXIT_FAILURE);
-	 }
+	}
 
         int i, poll_num;
         nfds_t nfds;

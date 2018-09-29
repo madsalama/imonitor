@@ -2,17 +2,21 @@
 #### NOTE: [ONLY MERGE WITH MAIN IFF TODO LIST IS #DONE]
 
 ### [TODO]
-
 #### handle any valgrind warnings/errors as you go.   [OK] -> [22/9/2018]
 
 [IN-PROGRESS]
-1. implementation for polling inotify watches. [DONE]
--- handle child to actually show output (redirect/pipes). [DONE]
 2. implementation for generating report with designed format.
 
 [TODO]
 + NEWLY ADDED FILES IN WATCHED PATH ARE NOT WATCHED AUTOMATICALLY
 + USE HASHMAP TO IMPROVE READ WTABLE PERFORMANCE IN ALL OPERATIONS (ADD/REMOVE/READ)
+
++ HANDLE THAT MODIFIED FILES ARE ADDED AS BELOW FOR SOME REASON:
+A /123
+D /123
+D /imonitor.c
+A /imonitor.c
+M /imonitor.c 
 
 
 [TODO]
@@ -26,6 +30,8 @@ respond with cached result instead of going through the whole list again. (expen
 - add . should resolve by daemon to actually add `pwd` 
 - INOTIFY ONLY MONITORS DIRECTORIES NOT INDIVIDUAL FILES!
 - ADD FULL PATH TO REPORT +EVENT_NAME => USE THREAD INSTEAD OF FORK TO READ WTABLE
+-- implementation for polling inotify watches.
+-- handle child to actually show output (redirect/pipes).
 
 --------
  [DONE]
