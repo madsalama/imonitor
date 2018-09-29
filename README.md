@@ -1,6 +1,8 @@
 # imonitor
-#### Dynamic inotify monitoring daemon
-##### Manages inotify watches on multiple directories
+Dynamic inotify monitoring daemon
+
+##### imonitord: daemon that manages inotify watches on multiple directories
+##### imonitor: command line utility
 
 #### USAGE:
 
