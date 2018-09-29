@@ -33,11 +33,12 @@ void handle_request(char* request_buffer, char* response_buffer);
 int lookup_wd(char path[], int* index);
 
 // search for appropriate location to add new watch_data
-// either in a "removed data" location [path -> NULL] or at the end of the queue (where: local count < watch_count)
+// either in a "removed data" location [path -> NULL] 
+// or at the end of the queue (where: local count < watch_count)
 int lookup_adding_index();
 
 // recreate watch_list string by going through wtable element by element O(N)
-// expensive strcat is involved, so this needs to be cached.
+// expensive strcat is involved, so watch_list might need to be cached.
 void list_watches(char list[]); 
 char* watch_list;
 
@@ -53,6 +54,10 @@ void init_socket();
 
 int server_sockfd;
 int fd;
+
+
+// improve: convert below watch_data table to a hash-table
+// implement lookup (path/wd) and add/remove operations
 
 // struct for handling watch data table | around 5KB/WATCH (MAX)
 struct watch_data{
@@ -128,7 +133,7 @@ int main(int argc, char *argv[])
 	        perror("calloc");
         	exit(EXIT_FAILURE);
 	}
-	
+
 	watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );   // 2048 WATCH * 4096 B = 1MB
 
 	// 1. FORK INOTIFY HANDLER 
@@ -222,12 +227,12 @@ Remove some watches and try again.", MAX_WATCH);
 else {
 	int index = lookup_adding_index();
 	
-	if((wtable[index].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_ACCESS | IN_CLOSE_WRITE )) == -1  ){ 
+	if((wtable[index].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_MODIFY )) == -1  ){ 
 		sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
 	}
 	else
 	{ // SUCCESS! 
-		wtable[index].path = calloc(path_len + 1, sizeof(char));  // add one byte for NULL terminator '\0'
+		wtable[index].path = calloc(path_len + 1, sizeof(char));  // add one extra byte for NULL terminator '\0'
 		strncpy(wtable[index].path, path, path_len); 
 		watch_count++;
 		sprintf(response_buffer, "[INFO] Watch added on %s | ID: %d", path, index+1);
@@ -248,18 +253,20 @@ else {
 		if (id == 0){ // = user passed string not integer
 			wd = lookup_wd(path, &index); 
 		}
-		else {	
+		else if ( id < 0 || id > watch_count || id > INT_MAX ) { // handle erronous user input
+		sprintf(response_buffer, "[ERROR] Watch ID must be a non-zero +ve integer < watch_count = %d", watch_count);
+			return;
+		}
+		else {
 			index = id - 1;
-			wd = wtable[index].wd;  // avoiding lookup, but on error verbosity cost
+                	wd = wtable[index].wd; // avoiding lookup, but on error verbosity cost
 		}
 		
-		if (wd < 0){
-			if (wtable[index].path == NULL)
-				sprintf(response_buffer, "[ERROR] Watch on %s doesn't exist!", path);
-			else
-				sprintf(response_buffer, "[ERROR] Watch on %s doesn't exist!",wtable[index].path);
+		if (wd == -1){
+			sprintf(response_buffer, "[ERROR] Watch on %s doesn't exist!", path);
+			return;
 		}
-                else if( inotify_rm_watch(fd, wd) == -1  ){
+                else if( inotify_rm_watch(fd, wd) == -1 ){
                         sprintf(response_buffer, "[ERROR] Could not remove watch on %d : %s ", wd, strerror(errno));
                 }
                 else {	
@@ -404,7 +411,7 @@ void init_socket()
         unlink(local.sun_path);
         len = strlen(local.sun_path) + sizeof(local.sun_family);
 
-	// chmod(local.sun_path, 0777); // enable permissons on socket file
+	chmod(local.sun_path, 0777); // enable permissons on socket file
 
         if(bind(server_sockfd, (struct sockaddr *)&local, len) == -1)
         {

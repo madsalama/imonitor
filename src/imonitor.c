@@ -14,6 +14,9 @@
 // imonitor.c | unix socket client for managing imonitor daemon = (daemon.c)
 // USAGE: monitor [add|remove|list|help]
 
+
+
+
 void check_arg(int argc, char* arg);
 void synopsis();
 void help();
@@ -136,7 +139,7 @@ void check_arg(int argc, char* arg){
 	}
 	else if ( !strcmp(arg,"add") || !strcmp(arg,"remove")) {
 		if (argc<3){
-			printf("imonitor: [ERROR] watched path required\n");
+			printf("imonitor: [ERROR] Missing argument [PATH|ID]\n");
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -144,14 +147,14 @@ void check_arg(int argc, char* arg){
 }
 
 void synopsis(){
-	printf("$ imonitor [[add|remove] [PATH|ID]] [list] [help]\n");
+	printf("$ imonitor [add|remove] [PATH|ID] | list | help\n");
 }
 
 void help(){
 	printf("\nimonitor: client for imonitord to manage multiple inotify watches\n\n\
 commands:\n\
-$ imonitor add [PATH|ID]    = add an inotify watch on specified path or watch-id\n\
-$ imonitor remove [PATH]    = remove an inotify watch on specified path (if found)\n\
+$ imonitor add PATH         = add an inotify watch on specified path\n\
+$ imonitor remove [PATH|ID] = remove an inotify watch on specified path|ID (if found)\n\
 $ imonitor list             = list current watches\n\
 $ imonitor help             = prints this help\n\
 ");

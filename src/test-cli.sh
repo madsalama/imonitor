@@ -8,3 +8,5 @@ gcc imonitor.c serialization.c -o imonitor
 ./imonitor add /;
 
 ./imonitor list;
+
+echo > /var/tmp/monitoring.log
