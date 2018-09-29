@@ -3,7 +3,13 @@
 
 - imonitord: daemon that tracks inotify watches on multiple directories:
 	- handles "add/remove/list" for the running watches.
-	- spawns a parallel worker thread that uses polling to read inotify events and logs file system events inside watched directory (added/removed/modified).
+	- spawns a parallel worker thread that uses polling to read inotify events and logs file system events inside watched directory (added/removed/modified) in the format:
+```
+M /var/log/some_daemon.log
+A /var/log/added_file.txt
+D /var/log/delete_me.log
+
+```
 
 - imonitor: command line utility to use along with the daemon via unix domain socket. 
 
