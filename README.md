@@ -1,6 +1,10 @@
 # imonitor
 Dynamic inotify monitoring daemon
 
+### Manages inotify watches on multiple directories
+
+#### USAGE:
+
 ```
 $ imonitor add /var/log
 imonitord: [INFO] Watch added on /var/log | ID: 1
@@ -13,7 +17,6 @@ imonitord: [INFO] Watch added on /var | ID: 3
 
 $ imonitor remove 2 
 imonitord: [INFO] Watch removed on /home/msalama/imonitor/src | ID: 2
-
 
 $ imonitor list
 imonitord: [INFO] Watching ...
