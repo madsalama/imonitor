@@ -62,6 +62,8 @@ int* thread_watch_count ;
 
 FILE *file;
 
+void timestamp();
+
 void handle_events(int fd)  {
 
 	char buf[4096] __attribute__ ((aligned(__alignof__(struct inotify_event))));
@@ -110,7 +112,8 @@ void handle_events(int fd)  {
 		// CHECK MODIFIED FILES INSIDE WATCHED DIRECTORY
 		if ( event->len ) {
 
-			
+			timestamp();
+
 			char* path = lookup_path(*thread_watch_count, event -> wd );
 
 			reti = regcomp(&regex, "^[.]", 0);  // ignore hidden files
@@ -156,6 +159,7 @@ void handle_events(int fd)  {
 				// regerror(reti, &regex, (const)event->name, event->len);
 				fprintf(file,"Regex match failed: %s/%s\n",path, event->name);fflush(file);
 			}
+			fprintf(file, "\n"); fflush(file);
 
 			regfree(&regex);
 			free(path);
@@ -239,6 +243,6 @@ void timestamp()
 {
     time_t ltime; /* calendar time */
     ltime=time(NULL); /* get current cal time */
-    fprintf(file, "%s",asctime( localtime(&ltime) ) );fflush(file);
+    fprintf(file, "%s", asctime( localtime(&ltime) ) );
 }
 

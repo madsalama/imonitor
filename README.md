@@ -7,9 +7,15 @@
 	- spawns one parallel worker thread that uses polling to keep reading new inotify events\
 and logs filesystem events inside watched directory (added/removed/modified) in the format:
 ```
-M /var/log/some_daemon.log
-A /var/log/added_file.txt
-D /var/log/delete_me.log
+Fri Sep 28 10:08:01 2018
+D /home/msalama/imonitor/src/to_delete.txt
+
+Sat Sep 29 13:06:21 2018
+A /home/msalama/imonitor/src/new_file.txt
+
+Sat Sep 29 13:06:33 2018
+M /home/msalama/imonitor/src/modified.txt
+
 ```
 
 #### USAGE:
