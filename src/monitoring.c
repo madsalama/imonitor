@@ -82,6 +82,7 @@ void handle_events(int fd)  {
 	char *ptr;
 	regex_t regex;
 	int reti;
+	char* path;
 
            /* Loop while events can be read from inotify file descriptor. */
 
@@ -112,8 +113,6 @@ void handle_events(int fd)  {
 		// CHECK MODIFIED FILES INSIDE WATCHED DIRECTORY
 		if ( event->len ) {
 
-			char* path = lookup_path(*thread_watch_count, event -> wd );
-
 			reti = regcomp(&regex, "^[.]", 0);  // ignore hidden files
 
 			if (reti) {
@@ -127,7 +126,8 @@ void handle_events(int fd)  {
 			}
 
 			else if (reti == REG_NOMATCH) {
-				
+
+				path = lookup_path(*thread_watch_count, event -> wd );	
 				timestamp();
 
 				if ( event->mask & IN_CREATE ) {
