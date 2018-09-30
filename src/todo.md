@@ -26,6 +26,26 @@ In case M = specify what are the changes made to the file and log them to report
 respond with cached result instead of going through the whole list again. (expensive strcat!)
 2. use a hashmap to store watches instead of linear array operations for linear/add/remove
 
+[TODO]
+= AVOID HUGE ALLOCATED MEMORY and properly use DYNAMIC ALLOCATION (RE-ALLOC)
+= DONT FORGET TO FREE
+
+
+```
+[msalama@localhost src]$ grep PATH_MAX *
+imonitor.c:     unsigned char request_buffer[PATH_MAX], *ptr;
+imonitor.c:     char response_buffer[PATH_MAX];
+imonitor.c:        if((t = recv(sockfd, &response_buffer, PATH_MAX, 0)) > 0)
+imonitord.c:    paths = calloc(MAX_WATCH, sizeof(PATH_MAX));
+imonitord.c:    watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );   // 2048 WATCH * 4096 B = 1MB
+imonitord.c:        unsigned char request_buffer[PATH_MAX];
+imonitord.c:    unsigned char response_buffer[PATH_MAX];
+imonitord.c:        while(len = recv(client_sockfd, &request_buffer, PATH_MAX , 0), (len > 0 && len < PATH_MAX) )
+imonitord.c:    // char string[PATH_MAX]; // iteration variable
+serialization.h:        char path[PATH_MAX];
+```
+
+
 
 [DONE]
 - LIST OF IGNORE FILES (SWP/SWX...)

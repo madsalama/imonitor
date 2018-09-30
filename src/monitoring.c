@@ -155,6 +155,9 @@ void handle_events(int fd)  {
 	                                }
 	                        }
 				fprintf(file, "\n"); fflush(file);
+			
+				free(path);
+
 			}
 			else {
 				// regerror(reti, &regex, (const)event->name, event->len);
@@ -162,7 +165,6 @@ void handle_events(int fd)  {
 			}
 
 			regfree(&regex);
-			free(path);
 		}
 	}
 	}
