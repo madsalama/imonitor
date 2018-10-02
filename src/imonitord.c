@@ -373,6 +373,7 @@ void kill_daemon()
                 kill(pid, SIGTERM); //kill it gently
 	        close(fd);
         	free(wtable);
+		close(logfile_daemon);
         }
         else
         {
@@ -420,6 +421,7 @@ void stop_server()
         
 	close(fd);
         free(wtable);
+	close(logfile_daemon);
         exit(EXIT_SUCCESS);
 }
 
@@ -449,10 +451,10 @@ void init_socket()
 }
 
 
-// ---------------------------------------------------
-//  improve: algorithm -> O(N) on each operation
-//  N = up to watch_count instead of the whole table
-// ---------------------------------------------------
+// -------------------------------------------
+//  improve: algorithm -> Worst Case = O(N)
+//  N = watch_count <= MAX_WATCH 
+// -------------------------------------------
 int lookup_wd(char path[], int* index){
 	int i;
 	int count = 0 ;
@@ -471,7 +473,8 @@ int lookup_wd(char path[], int* index){
 	return -1;
 }
 
-
+// look for the first empty location
+// and add the new entry in it
 int lookup_adding_index(){
 	int index = 0;
 	int count = 0;
@@ -493,14 +496,14 @@ void list_watches(char list[]){
 		if ( wtable[i].path == NULL )
 			continue;
 		else {
-			char string[ strlen(wtable[i].path) + 25 ]; 
+			char string[ strlen(wtable[i].path) + 25 ]; // 25 characters for presentation below...
 			sprintf(string, "    👁️ ID:%d -> PATH:%s\n",i+1, wtable[i].path);
 			strcat(list, string);
 			count++; // found one!
 		}
 	}
 
-	// add code to remove trailing \n for final path
+	// remove trailing \n for final path
 	list[ strlen(list) - 1 ] = '\0';
 }
 // -----------------------

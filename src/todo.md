@@ -7,6 +7,27 @@
 [IN-PROGRESS]
 2. implementation for generating report with designed format.
 
+# Update timestamp() function to generate stamp like below
+
+# Create an in-memory comm-like function that shows changes after every file modification in this format
+
+$ comm -3 -1 original modified  => remove common, supress from first file
+$ comm -3 -2 original modified  => remove common, supress from second file
+$ comm original modified 	=> required report (visual comparison of changed lines)
+
+---------------------------
+  TUE 2/10/2018 | 7:46AM
+---------------------------
+
+M /opt/web/app/tomcat/ecycc8/conf/cycc/application.properties
+
+        logger.simonAlarmLevel=debug
+logger.simonAlarmLevel=info
+        storeMissing = false
+storeMissing = true
+vfcenter.warn.threshold=80
+        vfcenter.warn.threshold=8000
+
 [TODO]
 + NEWLY ADDED FILES IN WATCHED PATH ARE NOT WATCHED AUTOMATICALLY
 + USE HASHMAP TO IMPROVE READ WTABLE PERFORMANCE IN ALL OPERATIONS (ADD/REMOVE/READ)
@@ -19,17 +40,15 @@ A /imonitor.c
 M /imonitor.c 
 
 [TODO]
-In case M = specify what are the changes made to the file and log them to report.
++ In case M = specify what are the changes made to the file and log them to report.
 
 [TODO]
 1. cache watch_list; if watch_list not changed;
 respond with cached result instead of going through the whole list again. (expensive strcat!)
-2. use a hashmap to store watches instead of linear array operations for linear/add/remove
 
 [TODO]
 = AVOID HUGE ALLOCATED MEMORY and properly use DYNAMIC ALLOCATION (RE-ALLOC)
 = DONT FORGET TO FREE
-
 
 ```
 [msalama@localhost src]$ grep PATH_MAX *
