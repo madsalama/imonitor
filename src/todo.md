@@ -28,9 +28,11 @@ storeMissing = true
 vfcenter.warn.threshold=80
         vfcenter.warn.threshold=8000
 
+- Above is report.c - in-memory comm-like to report original/modified differences
+- A thread is created in main process as (loop) that waits in parallel forever for M changes (actions would be sent from inside monitoring.c threads)
+
 [TODO]
 + NEWLY ADDED FILES IN WATCHED PATH ARE NOT WATCHED AUTOMATICALLY
-+ USE HASHMAP TO IMPROVE READ WTABLE PERFORMANCE IN ALL OPERATIONS (ADD/REMOVE/READ)
 
 + HANDLE THAT MODIFIED FILES ARE ADDED AS BELOW FOR SOME REASON:
 A /123
@@ -38,13 +40,6 @@ D /123
 D /imonitor.c
 A /imonitor.c
 M /imonitor.c 
-
-[TODO]
-+ In case M = specify what are the changes made to the file and log them to report.
-
-[TODO]
-1. cache watch_list; if watch_list not changed;
-respond with cached result instead of going through the whole list again. (expensive strcat!)
 
 [TODO]
 = AVOID HUGE ALLOCATED MEMORY and properly use DYNAMIC ALLOCATION (RE-ALLOC)
@@ -64,6 +59,11 @@ imonitord.c:    // char string[PATH_MAX]; // iteration variable
 serialization.h:        char path[PATH_MAX];
 ```
 
+
+[TODO]
+1. cache watch_list; if watch_list not changed;
+respond with cached result instead of going through the whole list again. (expensive strcat!)
++ USE HASHMAP TO IMPROVE READ WTABLE PERFORMANCE IN ALL OPERATIONS (ADD/REMOVE/READ)
 
 
 [DONE]
