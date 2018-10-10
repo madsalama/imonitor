@@ -128,47 +128,54 @@ void handle_events(int fd)  {
 			else if (reti == REG_NOMATCH) {
 
 				path = lookup_path(*thread_watch_count, event -> wd );	
-				timestamp();
 
 				if (event->mask & IN_OPEN ){
-					// OPEN/READ FILE | KEEP TRACK OF OPEN FILES (PATH)
-					fprintf(file,"IN_CLOSE_WRITE: %s/%s\n",path, event->name );fflush(file);
+					// KEEP TRACK OF OPEN FILES (PATH)
+	                                if ( !(event->mask & IN_ISDIR) ) {
+						// TRIGGERED TWICE FOR SOME REASON!?
+                                                // fprintf(file,"IN_OPEN %s/%s\n", path, event->name );fflush(file);
+                                                // OPEN/READ FILE 
+                                        }
 				}
 
 				else if ( event->mask & IN_CREATE ) {
+					timestamp();
                                 	if ( event->mask & IN_ISDIR ) {
-	                                        fprintf(file,"A %s/%s\n", path, event->name );fflush(file);
+	                                        fprintf(file,"+DIR: %s/%s\n\n", path, event->name );fflush(file);
 	                                }
 	                                else {
-	                                        fprintf(file,"A %s/%s\n", path, event->name );fflush(file);
+	                                        fprintf(file,"+FILE: %s/%s\n\n", path, event->name );fflush(file);
 	                                }
 	                        }
 	                        else if ( event->mask & IN_DELETE ) {
+					timestamp();
 	                                if ( event->mask & IN_ISDIR ) {
-	                                        fprintf(file,"D %s/%s\n", path, event->name );fflush(file);
+	                                        fprintf(file,"-DIR: %s/%s\n\n", path, event->name );fflush(file);
 	                                }
 	                                else {
-	                                        fprintf(file,"D %s/%s\n", path, event->name );fflush(file);
+	                                        fprintf(file,"-FILE: %s/%s\n\n", path, event->name );fflush(file);
 	                                }
 	                        }
+				
 	                        else if ( event->mask & IN_MODIFY ) {
 	                                if ( event->mask & IN_ISDIR ) {
-	                                        fprintf(file,"M %s/%s\n",path, event->name );fflush(file);
+	                                        // fprintf(file,"M DIR: %s/%s\n",path, event->name );fflush(file);
 	                                }
 	                                else {
-	                                        fprintf(file,"M %s/%s\n",path, event->name );fflush(file);
+	                                        // fprintf(file,"M FILE: %s/%s\n",path, event->name );fflush(file);
 	                                }
 	                        }
+				
 
 				else if ( event->mask & IN_CLOSE_WRITE ) { // FILE MODIFIED
-					if (!(event->mask & IN_ISDIR)){
-						fprintf(file,"IN_CLOSE_WRITE: %s/%s\n",path, event->name );fflush(file);
-					}
+					if (event->mask & IN_ISDIR) {
+						// TRIGGERED MANY TIMES -> TEMPORARY FILES (READ/ADD/DELETE...)
+                                     	fprintf(file,"DIR: IN_CLOSE_WRITE %s/%s\n\n",path, event->name );fflush(file);
+                                        }
+					else
+					fprintf(file,"FILE: IN_CLOSE_WRITE %s/%s\n\n",path, event->name );fflush(file);
 				}
-				fprintf(file, "\n"); fflush(file);
-			
 				free(path);
-
 			}
 			else {
 				// regerror(reti, &regex, (const)event->name, event->len);
@@ -258,4 +265,5 @@ void timestamp()
     ltime=time(NULL); /* get current cal time */
     fprintf(file, "%s", asctime( localtime(&ltime) ) );
 }
+
 
