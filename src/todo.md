@@ -59,6 +59,16 @@ imonitord.c:    // char string[PATH_MAX]; // iteration variable
 serialization.h:        char path[PATH_MAX];
 ```
 
+// improve: make below #defines
+// configurable instead of hardwired
+
+#define PID_PATH "/var/tmp/imonitor.pid"
+#define SOCK_PATH "/tmp/imonitor.socket"
+
+#define LOG_PATH "/var/tmp/imonitord.log"
+#define MAX_WATCH 2048
+
+
 
 [TODO]
 1. cache watch_list; if watch_list not changed;

@@ -157,7 +157,6 @@ int main(int argc, char *argv[])
 
 	watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );   // 2048 WATCH * 4096 B = 1MB
 
-
 	// 1. SPAWN A WORKER HANDLER THREAD
 	fprintf(logfile_daemon, "INIT WORKER....\n"); fflush(logfile_daemon);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -370,14 +369,14 @@ void kill_daemon()
         {
                 fscanf(pidfile, "%d", &pid);
                 fprintf(stdout, "Killing PID %d\n", pid); fflush(stdout); 
-                kill(pid, SIGTERM); //kill it gently
-	        close(fd);
+	        close(fd);               
         	free(wtable);
-		close(logfile_daemon);
+		if(logfile_daemon) fclose(logfile_daemon);
+		kill(pid, SIGTERM);
         }
         else
         {
-                fprintf(stdout, "un_server not running\n"); //or you have bigger problems
+                fprintf(stdout, "un_server not running\n");
 		fflush(stdout);
         }
 	exit(EXIT_SUCCESS);
@@ -421,7 +420,7 @@ void stop_server()
         
 	close(fd);
         free(wtable);
-	close(logfile_daemon);
+	// fclose(logfile_daemon);
         exit(EXIT_SUCCESS);
 }
 

@@ -130,7 +130,12 @@ void handle_events(int fd)  {
 				path = lookup_path(*thread_watch_count, event -> wd );	
 				timestamp();
 
-				if ( event->mask & IN_CREATE ) {
+				if (event->mask & IN_OPEN ){
+					// OPEN/READ FILE | KEEP TRACK OF OPEN FILES (PATH)
+					fprintf(file,"IN_CLOSE_WRITE: %s/%s\n",path, event->name );fflush(file);
+				}
+
+				else if ( event->mask & IN_CREATE ) {
                                 	if ( event->mask & IN_ISDIR ) {
 	                                        fprintf(file,"A %s/%s\n", path, event->name );fflush(file);
 	                                }
@@ -154,6 +159,12 @@ void handle_events(int fd)  {
 	                                        fprintf(file,"M %s/%s\n",path, event->name );fflush(file);
 	                                }
 	                        }
+
+				else if ( event->mask & IN_CLOSE_WRITE ) { // FILE MODIFIED
+					if (!(event->mask & IN_ISDIR)){
+						fprintf(file,"IN_CLOSE_WRITE: %s/%s\n",path, event->name );fflush(file);
+					}
+				}
 				fprintf(file, "\n"); fflush(file);
 			
 				free(path);
