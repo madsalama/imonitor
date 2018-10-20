@@ -6,7 +6,7 @@
 	- handles requests from imonitor: "add/remove/list"
 	- spawns one parallel worker thread that uses polling to keep reading new inotify events\
 and logs filesystem events inside watched directory (added/removed/modified) in the format:
-- **imonitord** uses ``inotify`` which requires linux kernel > 2.6.13
+- Requires ``inotify`` which requires linux kernel > 2.6.13
 
 ```
 Fri Sep 28 10:08:01 2018
