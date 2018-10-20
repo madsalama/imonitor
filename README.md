@@ -18,6 +18,8 @@ M /home/msalama/imonitor/src/modified.txt
 
 ```
 
+- inotify support requires linux kernel > 2.6.13
+
 #### USAGE:
 
 ```
