@@ -15,8 +15,6 @@
 // USAGE: monitor [add|remove|list|help]
 
 
-
-
 void check_arg(int argc, char* arg);
 void synopsis();
 void help();

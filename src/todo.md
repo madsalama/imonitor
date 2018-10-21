@@ -5,6 +5,11 @@
 #### handle any valgrind warnings/errors as you go.   [OK] -> [22/9/2018]
 
 [IN-PROGRESS]
+1. handle if needed to watch a file instead of a dir:
+  - check input if file?... (/opt/web/config/auto.conf)
+  - watch parent directory. (/opt/web/config)
+  - if (event_name == filename && event_type == modify) -> execute handler.
+
 2. implementation for generating report with designed format.
 
 # Update timestamp() function to generate stamp like below
@@ -33,13 +38,16 @@ vfcenter.warn.threshold=80
 
 [TODO]
 + NEWLY ADDED FILES IN WATCHED PATH ARE NOT WATCHED AUTOMATICALLY
+  - if file event = A : create a new watch with that path
 
 + HANDLE THAT MODIFIED FILES ARE ADDED AS BELOW FOR SOME REASON:
+```
 A /123
 D /123
 D /imonitor.c
 A /imonitor.c
 M /imonitor.c 
+```
 
 [TODO]
 = AVOID HUGE ALLOCATED MEMORY and properly use DYNAMIC ALLOCATION (RE-ALLOC)
@@ -67,8 +75,6 @@ serialization.h:        char path[PATH_MAX];
 
 #define LOG_PATH "/var/tmp/imonitord.log"
 #define MAX_WATCH 2048
-
-
 
 [TODO]
 1. cache watch_list; if watch_list not changed;
