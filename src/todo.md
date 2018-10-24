@@ -5,6 +5,37 @@
 #### handle any valgrind warnings/errors as you go.   [OK] -> [22/9/2018]
 
 [IN-PROGRESS]
+0. Resolve symlinks /./..
+```
+resolve_to_absolute_path(const gchar *path, const gchar *basedir)
+{
+  long path_max = get_path_max();
+  gchar *res;
+  gchar *w_name;
+
+  w_name = build_filename(basedir, path);
+  res = (char *)g_malloc(path_max);
+
+  if (!realpath(w_name, res))
+    {
+      g_free(res);
+      if (errno == ENOENT)
+        {
+          res = g_strdup(path);
+        }
+      else
+        {
+          msg_error("Can't resolve to absolute path",
+                    evt_tag_str("path", path),
+                    evt_tag_error("error"));
+          res = NULL;
+        }
+    }
+  g_free(w_name);
+  return res;
+}
+``
+
 1. handle if needed to watch a file instead of a dir:
   - check input if file?... (/opt/web/config/auto.conf)
   - watch parent directory. (/opt/web/config)
@@ -135,4 +166,5 @@ imonitord: [INFO] Watching ...
 [msalama@localhost src]$ ./imonitor remove 1
 imonitord: [ERROR] Could not remove watch on 4 : Invalid argument
 ```
+
 

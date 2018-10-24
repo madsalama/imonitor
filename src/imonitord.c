@@ -251,7 +251,7 @@ Remove some watches and try again.", MAX_WATCH);
 else {
 	int index = lookup_adding_index();
 	
-	if((wtable[index].wd = inotify_add_watch(fd, path, IN_OPEN | IN_CREATE | IN_DELETE | IN_MODIFY | IN_CLOSE_WRITE )) == -1  ){ 
+	if((wtable[index].wd = inotify_add_watch(fd, path, IN_ALL_EVENTS )) == -1  ){ 
 		sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
 	}
 	else
@@ -277,8 +277,8 @@ else {
 		if (id == 0){ // = user passed string not integer
 			wd = lookup_wd(path, &index); 
 		}
-		else if ( id < 0 || id > watch_count || id > INT_MAX ) { // handle erronous user input
-		sprintf(response_buffer, "[ERROR] Watch ID must be a non-zero +ve integer < watch_count = %d", watch_count);
+		else if ( id < 0 || id > INT_MAX ) { // handle erronous user input
+		sprintf(response_buffer, "[ERROR] Watch ID must be a non-zero +ve integer");
 			return;
 		}
 		else {

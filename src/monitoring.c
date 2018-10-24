@@ -157,12 +157,13 @@ void handle_events(int fd)  {
 	                                }
 	                        }
 				
-	                        else if ( event->mask & IN_MODIFY ) {
+	                        else if ( event->mask & IN_MODIFY || event->mask & IN_IGNORED || event->mask & IN_ATTRIB ) {
+                                        timestamp();
 	                                if ( event->mask & IN_ISDIR ) {
-	                                        // fprintf(file,"M DIR: %s/%s\n",path, event->name );fflush(file);
+	                                        fprintf(file,"M DIR: %s/%s\n",path, event->name );fflush(file);
 	                                }
 	                                else {
-	                                        // fprintf(file,"M FILE: %s/%s\n",path, event->name );fflush(file);
+	                                        fprintf(file,"M FILE: %s/%s\n",path, event->name );fflush(file);
 	                                }
 	                        }
 				
