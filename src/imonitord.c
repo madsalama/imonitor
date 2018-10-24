@@ -157,7 +157,6 @@ int main(int argc, char *argv[])
 
 	watch_list = calloc ( MAX_WATCH * PATH_MAX, sizeof(char) );   // 2048 WATCH * 4096 B = 1MB
 
-
 	// 1. SPAWN A WORKER HANDLER THREAD
 	fprintf(logfile_daemon, "INIT WORKER....\n"); fflush(logfile_daemon);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -252,7 +251,7 @@ Remove some watches and try again.", MAX_WATCH);
 else {
 	int index = lookup_adding_index();
 	
-	if((wtable[index].wd = inotify_add_watch(fd, path, IN_CREATE | IN_DELETE | IN_MODIFY )) == -1  ){ 
+	if((wtable[index].wd = inotify_add_watch(fd, path, IN_ALL_EVENTS )) == -1  ){ 
 		sprintf(response_buffer, "[ERROR] Could not add watch on %s : %s", path, strerror(errno));
 	}
 	else
@@ -278,8 +277,8 @@ else {
 		if (id == 0){ // = user passed string not integer
 			wd = lookup_wd(path, &index); 
 		}
-		else if ( id < 0 || id > watch_count || id > INT_MAX ) { // handle erronous user input
-		sprintf(response_buffer, "[ERROR] Watch ID must be a non-zero +ve integer < watch_count = %d", watch_count);
+		else if ( id < 0 || id > INT_MAX ) { // handle erronous user input
+		sprintf(response_buffer, "[ERROR] Watch ID must be a non-zero +ve integer");
 			return;
 		}
 		else {
@@ -370,13 +369,14 @@ void kill_daemon()
         {
                 fscanf(pidfile, "%d", &pid);
                 fprintf(stdout, "Killing PID %d\n", pid); fflush(stdout); 
-                kill(pid, SIGTERM); //kill it gently
-	        close(fd);
+	        close(fd);               
         	free(wtable);
+		if(logfile_daemon) fclose(logfile_daemon);
+		kill(pid, SIGTERM);
         }
         else
         {
-                fprintf(stdout, "un_server not running\n"); //or you have bigger problems
+                fprintf(stdout, "un_server not running\n");
 		fflush(stdout);
         }
 	exit(EXIT_SUCCESS);
@@ -420,6 +420,7 @@ void stop_server()
         
 	close(fd);
         free(wtable);
+	// fclose(logfile_daemon);
         exit(EXIT_SUCCESS);
 }
 
@@ -449,10 +450,10 @@ void init_socket()
 }
 
 
-// ---------------------------------------------------
-//  improve: algorithm -> O(N) on each operation
-//  N = up to watch_count instead of the whole table
-// ---------------------------------------------------
+// -------------------------------------------
+//  improve: algorithm -> Worst Case = O(N)
+//  N = watch_count <= MAX_WATCH 
+// -------------------------------------------
 int lookup_wd(char path[], int* index){
 	int i;
 	int count = 0 ;
@@ -471,7 +472,8 @@ int lookup_wd(char path[], int* index){
 	return -1;
 }
 
-
+// look for the first empty location
+// and add the new entry in it
 int lookup_adding_index(){
 	int index = 0;
 	int count = 0;
@@ -493,16 +495,14 @@ void list_watches(char list[]){
 		if ( wtable[i].path == NULL )
 			continue;
 		else {
-			char string[ strlen(wtable[i].path) + 25 ]; 
+			char string[ strlen(wtable[i].path) + 25 ]; // 25 characters for presentation below...
 			sprintf(string, "    👁️ ID:%d -> PATH:%s\n",i+1, wtable[i].path);
 			strcat(list, string);
 			count++; // found one!
 		}
 	}
 
-	// add code to remove trailing \n for final path
+	// remove trailing \n for final path
 	list[ strlen(list) - 1 ] = '\0';
 }
 // -----------------------
-
-

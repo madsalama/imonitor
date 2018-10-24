@@ -82,6 +82,7 @@ void handle_events(int fd)  {
 	char *ptr;
 	regex_t regex;
 	int reti;
+	char* path;
 
            /* Loop while events can be read from inotify file descriptor. */
 
@@ -112,8 +113,6 @@ void handle_events(int fd)  {
 		// CHECK MODIFIED FILES INSIDE WATCHED DIRECTORY
 		if ( event->len ) {
 
-			char* path = lookup_path(*thread_watch_count, event -> wd );
-
 			reti = regcomp(&regex, "^[.]", 0);  // ignore hidden files
 
 			if (reti) {
@@ -127,34 +126,57 @@ void handle_events(int fd)  {
 			}
 
 			else if (reti == REG_NOMATCH) {
-				
-				timestamp();
 
-				if ( event->mask & IN_CREATE ) {
+				path = lookup_path(*thread_watch_count, event -> wd );	
+
+				if (event->mask & IN_OPEN ){
+					// KEEP TRACK OF OPEN FILES (PATH)
+	                                if ( !(event->mask & IN_ISDIR) ) {
+						// TRIGGERED TWICE FOR SOME REASON!?
+                                                // fprintf(file,"IN_OPEN %s/%s\n", path, event->name );fflush(file);
+                                                // OPEN/READ FILE 
+                                        }
+				}
+
+				else if ( event->mask & IN_CREATE ) {
+					timestamp();
                                 	if ( event->mask & IN_ISDIR ) {
-	                                        fprintf(file,"A %s/%s\n", path, event->name );fflush(file);
+	                                        fprintf(file,"+DIR: %s/%s\n\n", path, event->name );fflush(file);
 	                                }
 	                                else {
-	                                        fprintf(file,"A %s/%s\n", path, event->name );fflush(file);
+	                                        fprintf(file,"+FILE: %s/%s\n\n", path, event->name );fflush(file);
 	                                }
 	                        }
 	                        else if ( event->mask & IN_DELETE ) {
+					timestamp();
 	                                if ( event->mask & IN_ISDIR ) {
-	                                        fprintf(file,"D %s/%s\n", path, event->name );fflush(file);
+	                                        fprintf(file,"-DIR: %s/%s\n\n", path, event->name );fflush(file);
 	                                }
 	                                else {
-	                                        fprintf(file,"D %s/%s\n", path, event->name );fflush(file);
+	                                        fprintf(file,"-FILE: %s/%s\n\n", path, event->name );fflush(file);
 	                                }
 	                        }
-	                        else if ( event->mask & IN_MODIFY ) {
+				
+	                        else if ( event->mask & IN_MODIFY || event->mask & IN_IGNORED || event->mask & IN_ATTRIB ) {
+                                        timestamp();
 	                                if ( event->mask & IN_ISDIR ) {
-	                                        fprintf(file,"M %s/%s\n",path, event->name );fflush(file);
+	                                        fprintf(file,"M DIR: %s/%s\n",path, event->name );fflush(file);
 	                                }
 	                                else {
-	                                        fprintf(file,"M %s/%s\n",path, event->name );fflush(file);
+	                                        fprintf(file,"M FILE: %s/%s\n",path, event->name );fflush(file);
 	                                }
 	                        }
-				fprintf(file, "\n"); fflush(file);
+				
+
+				else if ( event->mask & IN_CLOSE_WRITE ) { // FILE MODIFIED
+					if (event->mask & IN_ISDIR) {
+						// TRIGGERED MANY TIMES -> TEMPORARY FILES (READ/ADD/DELETE...)
+                                     	fprintf(file,"DIR: IN_CLOSE_WRITE %s/%s\n\n",path, event->name );fflush(file);
+                                        }
+					else
+					fprintf(file,"FILE: IN_CLOSE_WRITE %s/%s\n\n",path, event->name );fflush(file);
+				}
+				free(path);
 			}
 			else {
 				// regerror(reti, &regex, (const)event->name, event->len);
@@ -162,7 +184,6 @@ void handle_events(int fd)  {
 			}
 
 			regfree(&regex);
-			free(path);
 		}
 	}
 	}
@@ -245,4 +266,5 @@ void timestamp()
     ltime=time(NULL); /* get current cal time */
     fprintf(file, "%s", asctime( localtime(&ltime) ) );
 }
+
 
