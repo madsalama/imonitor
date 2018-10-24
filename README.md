@@ -1,5 +1,5 @@
 # imonitor
-### Dynamic filesystem monitoring daemon
+### Dynamic filesystem monitoring daemon (experimental)
 
 - **imonitor**: command line utility that sends requests to daemon via unix domain socket.
 - **imonitord**: daemon that tracks inotify watches on multiple directories:
