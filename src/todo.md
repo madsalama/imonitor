@@ -5,8 +5,8 @@
 #### handle any valgrind warnings/errors as you go.   [OK] -> [22/9/2018]
 
 [IN-PROGRESS]
-0. Resolve symlinks /./..
 ```
+0. Resolve symlinks /./.. (code thanks to syslog-ng)
 resolve_to_absolute_path(const gchar *path, const gchar *basedir)
 {
   long path_max = get_path_max();
